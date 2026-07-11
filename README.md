@@ -1,0 +1,258 @@
+# opencode-moa
+
+> A native OpenCode multi-agent orchestrator for competitive model evaluation, empirical validation, and iterative refinement — **without a single line of bash**.
+
+[![OpenCode](https://img.shields.io/badge/OpenCode-native-blueviolet)](https://opencode.ai)
+[![Mixture-of-Agents](https://img.shields.io/badge/inspired%20by-Mixture%20of%20Agents-orange)](https://arxiv.org/abs/2406.04692)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue)](#license)
+[![Status](https://img.shields.io/badge/status-v0.2%20beta-yellow)]()
+
+## What is opencode-moa?
+
+`opencode-moa` is a multi-agent orchestration system built **entirely inside OpenCode** — no external scripts, no bash, no Python, no CLI shellouts. It coordinates multiple AI models in parallel to:
+
+1. **Generate** competing proposals for the same prompt (multi-model)
+2. **Validate** them empirically by executing their commands (bash + webfetch)
+3. **Evaluate** them with objective criteria
+4. **Classify** and rank them
+5. **Improve** them using feedback
+6. **Iterate** until convergence
+
+All coordination is done by an OpenCode primary agent (`orquestador`) that invokes subagents via OpenCode's native `task` tool. Everything is declarative markdown + JSON.
+
+## Why?
+
+The traditional multi-model orchestrators (AutoGen, CrewAI, LangGraph, custom bash scripts) require:
+
+- Maintaining code in a non-declarative language
+- Handling process management, retries, and concurrency manually
+- External dependencies (Python, bash, npm packages)
+- Complex deployment
+
+`opencode-moa` reuses OpenCode's existing primitives — subagents, permissions, session logs, custom commands — to deliver the same functionality with **zero external code**.
+
+## Quick start
+
+### 1. Install (one-time)
+
+From the repo root:
+
+```bash
+# Linux / macOS
+cp opencode-moa/agents/*.md ~/.config/opencode/agents/
+cp opencode-moa/commands/*.md ~/.config/opencode/commands/
+cp opencode-moa/orquestador.json ~/.config/opencode/
+
+# Or on a remote VPS via SSH
+ssh user@vps "mkdir -p ~/.config/opencode/{agents,commands}"
+scp opencode-moa/agents/*.md user@vps:~/.config/opencode/agents/
+scp opencode-moa/commands/*.md user@vps:~/.config/opencode/commands/
+scp opencode-moa/orquestador.json user@vps:~/.config/opencode/
+```
+
+See [`opencode-moa/README.md`](opencode-moa/README.md) for full installation instructions.
+
+### 2. Run
+
+From the OpenCode TUI:
+
+```
+/orquestar "Design a REST API for inventory management with JWT auth" auth-jwt
+```
+
+Or with iterate mode:
+
+```
+/orquestar-iterate "Design a REST API for inventory management with JWT auth" auth-jwt
+```
+
+Or with the smoke test (validates the pipeline with a trivial prompt):
+
+```
+/orquestar --smoke-test=true "test" smoke
+```
+
+### 3. Inspect results
+
+```
+out/auth-jwt/iter-1/
+├── 01-propuesta-glm.md
+├── 01-propuesta-kimi.md
+├── 01-propuesta-mimo.md
+├── 02-validacion-glm.md
+├── 02-validacion-kimi.md
+├── 02-validacion-mimo.md
+├── 03-calificacion-evaluador.md
+├── 04-clasificacion.md
+├── 05-mejorada-glm.md
+├── 05-mejorada-kimi.md
+├── 05-mejorada-mimo.md
+├── 06-validacion-mejorada-glm.md
+├── 06-validacion-mejorada-kimi.md
+├── 06-validacion-mejorada-mimo.md
+├── 07-calificacion-final.md
+├── 08-ganador.md
+└── 09-sumario.md
+```
+
+## Repository structure
+
+```
+opencode-moa/
+├── README.md                              ← you are here
+├── CHANGELOG.md                           ← version history
+├── ROADMAP.md                             ← future plans
+├── LICENSE                                ← Apache 2.0
+├── docs/
+│   ├── proposals/
+│   │   └── 001-orquestador-nativo-opencode.md   ← complete design document
+│   ├── research/
+│   │   └── iterations-analysis.md         ← analysis of real-world multi-model iterations
+│   └── installation.md                    ← detailed installation guide
+├── examples/
+│   ├── smoke-test-colores.md              ← minimal smoke test example
+│   └── auth-jwt-rest-api.md               ← full example with iterate mode
+└── opencode-moa/                          ← INSTALLABLE BUNDLE (copy this to ~/.config/opencode/)
+    ├── README.md                          ← installation instructions for this bundle
+    ├── agents/
+    │   ├── orquestador.md                 ← PRIMARY: coordinates the flow
+    │   ├── propuesta-glm.md               ← generates proposals with GLM-5.1
+    │   ├── propuesta-kimi.md              ← generates proposals with Kimi K2.6
+    │   ├── propuesta-mimo.md              ← generates proposals with MiniMax-M3-thinking
+    │   ├── evaluador.md                   ← evaluates all proposals
+    │   ├── sintetizador.md                ← classifies and selects winners
+    │   └── validador.md                   ← empirical validation (bash + webfetch)
+    ├── commands/
+    │   ├── orquestar.md                   ← /orquestar command
+    │   └── orquestar-iterate.md           ← /orquestar-iterate command
+    └── orquestador.json                   ← configuration (list of models, iterate settings)
+```
+
+## Key features
+
+### Multi-model competition (step 1)
+
+Three AI models generate proposals for the same prompt in parallel:
+- GLM-5.1
+- Kimi K2.6
+- MiniMax-M3-thinking
+
+Each writes to its own file. The orchestrator invokes all three with a single response containing three `task` calls.
+
+### Empirical validation (step 2)
+
+A dedicated subagent (`validador`) executes the commands mentioned in each proposal and reports **per-section viability** (not just global). Bash permissions are scoped via OpenCode's permission system to prevent destructive operations.
+
+### Single-model evaluation (step 3, 7)
+
+A single evaluator (`evaluador`, using MiniMax-M3-thinking with temperature 0.0) grades all proposals with objective criteria: Technical Quality, Completeness, Applicability, Security, Innovation. The evaluator adjusts the Applicability score based on the per-section viability report.
+
+### Opt-in disqualification (step 4, 8)
+
+By default, proposals with low viability stay in the ranking as ⚠️ warnings (with AP reduced). Set `descalificar_fallida: true` in `orquestador.json` to enable strict disqualification.
+
+### Iterative convergence (step 9 → step 0 loop)
+
+`/orquestar-iterate` repeats the entire flow until:
+- The score improvement between iterations falls below `umbral_convergencia` (default 0.5)
+- The number of iterations reaches `max_iteraciones` (default 3)
+- A regression is detected (always stops)
+
+### 4-layer smoke test control
+
+The smoke test (a trivial prompt that validates the pipeline) can be controlled via:
+
+1. Command flag (highest priority): `/orquestar --smoke-test=true "..." id`
+2. Project-level `./orquestador.json`: `"smoke_test": true`
+3. User-level `~/.config/opencode/orquestador.json`: `"smoke_test": "auto"`
+4. Default fallback: `false`
+
+The `"auto"` mode lets the orchestrator decide based on prompt length and complexity.
+
+## Design decisions
+
+### Why multi-model only for proposals?
+
+Based on analysis of 5 real-world multi-model iterations (cardiorrenal, oc-rust-02, eval-7-ia-001, oc-software-development-agents/001 and /002):
+
+- **Multi-model generation**: 100% valuable (different approaches enrich the pool)
+- **Multi-model evaluation**: valuable in 33% of cases (close ties); redundant in 67% (clear consensus)
+- **Multi-model validation**: irrelevant (bash output is binary)
+- **Single-model synthesis**: critical (needs consistent criterion)
+
+See [`docs/research/iterations-analysis.md`](docs/research/iterations-analysis.md) for the full analysis with citations.
+
+### Why per-section viability?
+
+Complex proposals have multiple technical sections (installation, API endpoints, code snippets, etc.). A single failure in one section doesn't justify disqualifying the entire proposal. The validator reports viability per section, and the evaluator adjusts scores proportionally.
+
+### Why user-level + project-level config?
+
+OpenCode natively merges configurations from multiple sources. This lets you:
+
+- Install `opencode-moa` once in `~/.config/opencode/` (user-level, available everywhere)
+- Override specific fields per-project (e.g., disable smoke test in production projects)
+
+The merge is automatic and non-conflicting keys are preserved.
+
+## Configuration
+
+The `orquestador.json` file has 9 fields:
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `version` | string | required | Schema version (semver) |
+| `modelos_a_competir` | array<string> | required | Models that generate proposals |
+| `modelo_objetivo` | string | required | Model for evaluation/validation/synthesis |
+| `max_iteraciones` | integer (1-10) | 3 | Max iterations in iterate mode |
+| `umbral_convergencia` | number (0-50) | 0.5 | Min score improvement to continue iterating |
+| `validacion_empirica` | boolean | true | Enable steps 2 and 6 (bash validation) |
+| `descalificar_fallida` | boolean | false | Opt-in strict disqualification |
+| `smoke_test` | boolean \| "auto" | false | Smoke test mode |
+
+See [`docs/proposals/001-orquestador-nativo-opencode.md`](docs/proposals/001-orquestador-nativo-opencode.md#7-orquestadorjson--esquema-completo) for the complete schema.
+
+## Documentation
+
+- 📋 [Complete design proposal](docs/proposals/001-orquestador-nativo-opencode.md) — 23 sections covering every detail
+- 🔍 [Iterations analysis](docs/research/iterations-analysis.md) — empirical evidence backing the design decisions
+- 📦 [Installation guide](docs/installation.md) — detailed install instructions for local, VPS, Docker, etc.
+- 🧪 [Examples](examples/) — minimal smoke test and full REST API example
+- 📝 [Changelog](CHANGELOG.md) — version history
+- 🗺️ [Roadmap](ROADMAP.md) — future plans
+
+## Background
+
+This project is inspired by the paper **"Mixture-of-Agents"** (Together AI, 2024), which showed that layering multiple LLMs produces better responses than any individual model. While `opencode-moa` doesn't implement the full MoA paper (which uses iterative refinement through multiple model layers), it captures the spirit: multiple models contribute to a better final result.
+
+It's also informed by 6+ months of real-world multi-model orchestration experiments documented in the research folder.
+
+## Contributing
+
+This is currently a single-author project (Israel Roldan, [israel.alberto.rv@gmail.com](mailto:israel.alberto.rv@gmail.com)). Contributions welcome via issues and pull requests.
+
+Areas where help is especially valued:
+- Adding more `propuesta-{model}.md` variants for other AI providers
+- Testing on additional real-world prompts
+- Documentation translations (currently English only)
+- Performance benchmarks
+
+## License
+
+Apache License 2.0 — see [LICENSE](LICENSE).
+
+Selected over AGPL v3.0 (the user's default) and MIT because:
+- This is a tool/template, not a service — AGPL's network clause adds little value
+- 100% markdown + JSON, not traditional source code
+- Patent grant is useful when mixing multiple AI providers with different ToS
+- Maximum adoption = more contributions and feedback
+
+## Related projects
+
+- [OpenCode](https://opencode.ai) — the AI coding agent this project extends
+- [Mixture-of-Agents paper](https://arxiv.org/abs/2406.04692) — inspiration
+- Original bash-based predecessor: see `docs/research/` for the history
+
+---
+
+**opencode-moa** — Multi-model orchestration, native OpenCode, zero bash.

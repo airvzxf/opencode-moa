@@ -1,0 +1,15 @@
+{
+  "$schema": "https://opencode-moa.dev/schemas/orquestador.v1.json",
+  "version": "1.0",
+  "modelos_a_competir": [
+    "opencode-go/glm-5.1",
+    "opencode-go/kimi-k2.6",
+    "opencode-go/minimax-m3:thinking"
+  ],
+  "modelo_objetivo": "opencode-go/minimax-m3:thinking",
+  "max_iteraciones": 3,
+  "umbral_convergencia": 0.5,
+  "validacion_empirica": true,
+  "descalificar_fallida": false,
+  "smoke_test": false
+}
