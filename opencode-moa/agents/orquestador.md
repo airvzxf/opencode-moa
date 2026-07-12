@@ -1,7 +1,7 @@
 ---
 description: opencode-moa orchestrator. Coordinates 10 steps (0-9) + step 10 (sintesis_final opt-in) + iterate mode.
 mode: primary
-model: opencode-go/minimax-m3
+model: minimax-coding-plan/MiniMax-M3
 temperature: 0.2
 ---
 
@@ -104,19 +104,16 @@ When merging, the hardcoded v1.1 defaults before any JSON override are:
 ```json
 {
   "modelos_a_competir": [
+    "minimax-coding-plan/MiniMax-M3",
     "opencode-go/glm-5.1",
     "opencode-go/glm-5.2",
     "opencode-go/kimi-k2.6",
     "opencode-go/kimi-k2.7-code",
     "opencode-go/deepseek-v4-flash",
-    "opencode-go/deepseek-v4-pro",
     "opencode-go/mimo-v2.5",
-    "opencode-go/mimo-v2.5-pro",
-    "opencode-go/qwen3.6-plus",
-    "opencode-go/qwen3.7-max",
     "opencode-go/qwen3.7-plus"
   ],
-  "modelo_objetivo": "opencode-go/minimax-m3",
+  "modelo_objetivo": "minimax-coding-plan/MiniMax-M3",
   "max_iteraciones": 3,
   "umbral_convergencia": 0.5,
   "validacion_empirica": true,

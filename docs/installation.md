@@ -5,7 +5,12 @@ This guide covers installation of `opencode-moa` on local machines, remote serve
 ## Prerequisites
 
 - **OpenCode CLI** installed and configured (`opencode --version` should print v1.0.0+)
-- **At least 3 AI model providers** configured in OpenCode (defaults: `opencode-go/glm-5.1`, `opencode-go/kimi-k2.6`, `opencode-go/minimax-m3`)
+- **At least 2 AI model providers** configured in OpenCode:
+  - `minimax-coding-plan` (the user's MiniMax Token Plan — used by ALL
+    v0.3 agents: proposers, meta-agents, and the orchestrator itself)
+  - `opencode-go` (used by the 7 opencode-go models in the default
+    roster: glm-5.1, glm-5.2, kimi-k2.6, kimi-k2.7-code, deepseek-v4-flash,
+    mimo-v2.5, qwen3.7-plus)
 - A POSIX-compliant shell (bash, zsh, fish) for the install commands
 
 ## Installation methods
@@ -424,6 +429,59 @@ opencode run \
   --dir /your/test/dir \
   "/orquestar --smoke-test=true test smoke"
 ```
+
+### Subagent (validador / evaluador) hangs at step 2/3 waiting for permission
+
+**Symptom:** when running the full orchestrator pipeline in headless
+mode, step 2 (validador) or step 3 (evaluador) blocks indefinitely on a
+`bash: ask` permission prompt. The `--auto` flag does NOT auto-approve
+these because the subagent inherits interactive-actor semantics, not the
+primary session's `--auto` flag.
+
+**Root cause:** this is [OpenCode upstream issue #35073](https://github.com/anomalyco/opencode/issues/35073)
+("fix: subagent permission asks hang indefinitely"). The fix landed in
+PR #35823 but may not be in the release you're running (opencode 1.17.18
+as of 2026-07-12). Related issues: #13715, #32388, #33028.
+
+**Workaround (until upstream fix is released in your binary):**
+
+1. Set `bash: allow` (and any other permissions you need) at the **user
+   level**, not just project level. The project-level config does not
+   propagate to subagents reliably; user-level does:
+
+   ```bash
+   # Add to ~/.config/opencode/opencode.jsonc
+   {
+     "permission": {
+       "bash": "allow",
+       "edit": "allow",
+       "write": "allow",
+       "read": "allow",
+       "webfetch": "allow",
+       "task": "allow",
+       "todowrite": "allow",
+       "external_directory": {
+         "/tmp/opencode-moa-v3-test/*": "allow",
+         "/tmp/opencode/*": "allow",
+         "/home/wolf/.local/share/opencode/*": "allow"
+       }
+     }
+   }
+   ```
+
+   **WARNING:** this allows ALL bash in the primary session, including
+   destructive commands. Acceptable for a dedicated research/DPS
+   machine; not acceptable for a production machine.
+
+2. Alternative: bypass the orchestrator entirely and invoke step 5
+   (sintesis_central) directly via the build agent with `--model`
+   override and `--auto --pure`. This avoids the validador subagent
+   entirely. See `docs/research/experiments/2026-07-12-rust-gui-app-v3.md`
+   §10 Appendix for the wrapper script `run-step5.sh`.
+
+**Long-term:** track [PR #35823](https://github.com/anomalyco/opencode/pull/35823)
+for the upstream fix. Once merged and released, the user-level config
+can be removed and the project-level config becomes sufficient again.
 
 ---
 
