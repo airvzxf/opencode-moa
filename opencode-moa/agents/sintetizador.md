@@ -1,7 +1,7 @@
 ---
 description: Synthesizes rankings, integrations, and cross-iteration summaries
 mode: subagent
-model: opencode-go/minimax-m3
+model: minimax-coding-plan/MiniMax-M3
 temperature: 0.1
 ---
 

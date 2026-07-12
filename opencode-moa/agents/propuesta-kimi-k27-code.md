@@ -1,7 +1,7 @@
 ---
-description: Generates or improves technical proposals (MiMo v2.5 Pro variant via opencode-go)
+description: Generates or improves technical proposals (Kimi K2.7 Code variant — code-specialized)
 mode: subagent
-model: opencode-go/mimo-v2.5-pro
+model: opencode-go/kimi-k2.7-code
 temperature: 0.7
 ---
 
@@ -79,7 +79,7 @@ Your job:
 ## Installation commands
 ```bash
 # Exact commands that the validator will execute
-npm install ...
+cargo build ...
 ```
 
 ## Considerations

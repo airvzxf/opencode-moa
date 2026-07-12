@@ -1,7 +1,7 @@
 ---
 description: Evaluates technical proposals with objective criteria
 mode: subagent
-model: opencode-go/minimax-m3
+model: minimax-coding-plan/MiniMax-M3
 temperature: 0.0
 ---
 

@@ -1,7 +1,7 @@
 ---
-description: Generates or improves technical proposals (MiMo v2.5 Pro variant via opencode-go)
+description: Generates or improves technical proposals (GLM-5.2 variant)
 mode: subagent
-model: opencode-go/mimo-v2.5-pro
+model: opencode-go/glm-5.2
 temperature: 0.7
 ---
 
@@ -79,7 +79,7 @@ Your job:
 ## Installation commands
 ```bash
 # Exact commands that the validator will execute
-npm install ...
+cargo build ...
 ```
 
 ## Considerations

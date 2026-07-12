@@ -2,19 +2,16 @@
   "$schema": "https://opencode-moa.dev/schemas/orquestador.v1.1.json",
   "version": "1.1",
   "modelos_a_competir": [
+    "minimax-coding-plan/MiniMax-M3",
     "opencode-go/glm-5.1",
     "opencode-go/glm-5.2",
     "opencode-go/kimi-k2.6",
     "opencode-go/kimi-k2.7-code",
     "opencode-go/deepseek-v4-flash",
-    "opencode-go/deepseek-v4-pro",
     "opencode-go/mimo-v2.5",
-    "opencode-go/mimo-v2.5-pro",
-    "opencode-go/qwen3.6-plus",
-    "opencode-go/qwen3.7-max",
     "opencode-go/qwen3.7-plus"
   ],
-  "modelo_objetivo": "opencode-go/minimax-m3",
+  "modelo_objetivo": "minimax-coding-plan/MiniMax-M3",
 
   "max_iteraciones": 3,
   "umbral_convergencia": 0.5,

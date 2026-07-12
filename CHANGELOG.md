@@ -12,6 +12,84 @@ All notable changes to `opencode-moa` are documented here. The format is based o
 - Git integration: optional auto-commit of `out/` after each iteration
 - Cost estimation per iteration (track token usage)
 
+### Fixed (validated by 2026-07-12 v0.3 rerun — PR #4)
+
+**The `propuesta-mimo.md` model-binding conflict (HIGH severity).**
+Between v0.2.0-beta and v0.3 (PR #1, commit `75307fd`), the
+`opencode-moa/agents/propuesta-mimo.md` frontmatter was changed from
+`model: opencode-go/mimo-v2.5-pro` to `model: opencode-go/minimax-m3`.
+The new `propuesta-minimax.md` agent was created for the user's plan
+model `minimax-coding-plan/MiniMax-M3`, but `propuesta-mimo.md` was
+incorrectly re-bound to the OpenCode-hosted MiniMax (the model the
+user explicitly excluded from proposers with "nunca se va a ejecutar
+MiniMax de OpenCode").
+
+Symptoms observed on 2026-07-12:
+- 42 requests to `opencode-go/minimax-m3` ($0.10 spent) by orphan
+  subagent processes spawned during iter-1
+- 11 legitimate iter-2 propuesta subprocesses were killed when we
+  terminated all `opencode run` processes to stop the orphan
+- See `opencode-moa/AGENTS.md` §2 for full post-mortem
+
+**Fix:** restored `propuesta-mimo.md` to `model: opencode-go/mimo-v2.5-pro`
+(matches the v0.2.0-beta mapping documented in bitácora §2).
+
+**Documented OpenCode upstream bug** [#35073](https://github.com/anomalyco/opencode/issues/35073)
+("subagent permission asks hang indefinitely") in `docs/installation.md`
+with two workarounds: (a) user-level `bash: allow` config; (b) bypass
+step 2/3 by invoking step 5 directly via build agent. Affects all
+users running the full orchestrator pipeline in headless mode until
+PR #35823 is released. Caused the 2026-07-12 iter-1 to block at step 2
+(validador) and forced steps 3/4/6/7 to be filled in synthetically.
+
+### Changed (validated by 2026-07-12 v0.3 rerun — PR #4)
+
+**Default `modelos_a_competir` reduced from 11 to 8** based on
+cost/ROI analysis of the v0.2.0-beta iter-1+2 data plus the 2026-07-12
+v0.3 rerun telemetry. Dropped:
+
+- `opencode-go/qwen3.7-max` — worst $/req ($0.056), mid-tier output
+- `opencode-go/deepseek-v4-pro` — regressed 24→24 in iter-2
+- `opencode-go/qwen3.6-plus` — regressed 27→27 in iter-2
+- `opencode-go/mimo-v2.5-pro` — persistent low performer
+
+The 8-model default roster and per-model rationale is documented in
+`opencode-moa/AGENTS.md` §1.
+
+**`modelo_objetivo` default changed** from `opencode-go/minimax-m3`
+to `minimax-coding-plan/MiniMax-M3` (the user's plan model). Matches
+the v0.2.0-bitácora §1 baseline (`"modelo_objetivo":
+"minimax-coding-plan/MiniMax-M3"`). The orchestrator itself now runs
+on the user's plan model instead of the OpenCode-hosted MiniMax.
+
+### Added (validated by 2026-07-12 v0.3 rerun — PR #4)
+
+- `opencode-moa/AGENTS.md` — operations & post-mortems file documenting
+  the model roster, the `propuesta-mimo.md` binding conflict, the
+  OpenCode permission workaround, and orphan-process handling.
+- `docs/research/experiments/2026-07-12-rust-gui-app-v3.md` — bitácora
+  of the v0.3 rerun (sintesis_central validation, §6.2 partial
+  validation, §6.3 cross-pollination extension, 8-model cost table).
+- `docs/papers/DRAFT-multi-model-orchestration.md` — §5.4 NEW,
+  §6.2 expanded to 4 subsections (original hypothesis + empirical
+  evidence + refined proposition + iter-2 feedback-aware evidence),
+  §6.3 expanded with iter-1 convergence data, §7 future work
+  updated, §8 conclusion extended.
+
+### Fixed (validated by 2026-07-12 v0.3 rerun)
+
+- Documented OpenCode upstream bug
+  [#35073](https://github.com/anomalyco/opencode/issues/35073)
+  ("subagent permission asks hang indefinitely") in
+  `docs/installation.md` with two workarounds: (a) user-level
+  `bash: allow` config; (b) bypass step 2/3 by invoking step 5 directly
+  via build agent. Affects all users running the full orchestrator
+  pipeline in headless mode until PR #35823 is released.
+- This bug caused the 2026-07-12 iter-1 to block at step 2 (validador)
+  and forced steps 3/4/6/7 to be filled in synthetically. Recovery via
+  direct invocation of step 5 (build agent + `--model minimax-coding-plan/MiniMax-M3`)
+  produced `05-propuesta-integrada.md` successfully.
+
 ### Fixed (validated by smoke test on 2026-07-11)
 
 This block collects the make-it-installable fixes that came out of the
