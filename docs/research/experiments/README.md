@@ -26,9 +26,10 @@ Each file is named `YYYY-MM-DD-<short-id>.md` and follows this layout:
 
 ## Index
 
-| Date       | ID             | Domain              | Status              | Best result          |
-|------------|----------------|---------------------|---------------------|----------------------|
-| 2026-07-11 | rust-gui-app   | Rust GUI            | Iter-1 complete, iter-2 partial (cuota cut) | MiniMax-M3 42/50 |
+| Date       | ID                | Domain   | Status                                                                       | Best result          |
+|------------|-------------------|----------|------------------------------------------------------------------------------|----------------------|
+| 2026-07-11 | rust-gui-app      | Rust GUI | Iter-1 complete, iter-2 partial (cuota cut)                                  | MiniMax-M3 42/50     |
+| 2026-07-12 | rust-gui-app-v3   | Rust GUI | Iter-1 complete (sintesis_central, steps 3/4/7/8 synthetic), iter-2 partial (1/12 propuesta) | integradora 46/50 (v0.3 sintesis_central) |
 
 ## Why a separate log file for each run
 
