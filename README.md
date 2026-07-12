@@ -118,7 +118,9 @@ opencode-moa/
     │   ├── orquestador.md                 ← PRIMARY: coordinates the flow
     │   ├── propuesta-glm.md               ← generates proposals with GLM-5.1
     │   ├── propuesta-kimi.md              ← generates proposals with Kimi K2.6
-    │   ├── propuesta-mimo.md              ← generates proposals with MiniMax-M3-thinking
+    │   ├── propuesta-mimo.md              ← generates proposals with MiniMax-M3
+    │   ├── propuesta-deepseek.md          ← generates proposals with DeepSeek V4 Pro
+    │   ├── propuesta-minimax.md           ← generates proposals with MiniMax-M3 (your token plan)
     │   ├── evaluador.md                   ← evaluates all proposals
     │   ├── sintetizador.md                ← classifies and selects winners
     │   └── validador.md                   ← empirical validation (bash + webfetch)
@@ -135,9 +137,9 @@ opencode-moa/
 Three AI models generate proposals for the same prompt in parallel:
 - GLM-5.1
 - Kimi K2.6
-- MiniMax-M3-thinking
+- MiniMax-M3
 
-Each writes to its own file. The orchestrator invokes all three with a single response containing three `task` calls.
+Each writes to its own file. The orchestrator invokes all three with a single response containing three `task` calls. The bundle ships five `propuesta-*` variants (`glm`, `kimi`, `mimo`, `deepseek`, `minimax`); pick any three in your `orquestador.json`.
 
 ### Empirical validation (step 2)
 
@@ -145,7 +147,7 @@ A dedicated subagent (`validador`) executes the commands mentioned in each propo
 
 ### Single-model evaluation (step 3, 7)
 
-A single evaluator (`evaluador`, using MiniMax-M3-thinking with temperature 0.0) grades all proposals with objective criteria: Technical Quality, Completeness, Applicability, Security, Innovation. The evaluator adjusts the Applicability score based on the per-section viability report.
+A single evaluator (`evaluador`, using MiniMax-M3 with temperature 0.0) grades all proposals with objective criteria: Technical Quality, Completeness, Applicability, Security, Innovation. The evaluator adjusts the Applicability score based on the per-section viability report.
 
 ### Opt-in disqualification (step 4, 8)
 

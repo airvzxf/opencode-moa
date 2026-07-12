@@ -1,0 +1,11 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "permission": {
+    "*": "allow",
+    "external_directory": {
+      "/tmp/opencode/<your-test-dir>/*": "allow",
+      "/tmp/opencode/*": "allow",
+      "/home/wolf/.local/share/opencode/*": "allow"
+    }
+  }
+}
