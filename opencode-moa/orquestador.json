@@ -1,15 +1,42 @@
 {
-  "$schema": "https://opencode-moa.dev/schemas/orquestador.v1.json",
-  "version": "1.0",
+  "$schema": "https://opencode-moa.dev/schemas/orquestador.v1.1.json",
+  "version": "1.1",
   "modelos_a_competir": [
     "opencode-go/glm-5.1",
+    "opencode-go/glm-5.2",
     "opencode-go/kimi-k2.6",
-    "opencode-go/minimax-m3:thinking"
+    "opencode-go/kimi-k2.7-code",
+    "opencode-go/deepseek-v4-flash",
+    "opencode-go/deepseek-v4-pro",
+    "opencode-go/mimo-v2.5",
+    "opencode-go/mimo-v2.5-pro",
+    "opencode-go/qwen3.6-plus",
+    "opencode-go/qwen3.7-max",
+    "opencode-go/qwen3.7-plus"
   ],
-  "modelo_objetivo": "opencode-go/minimax-m3:thinking",
+  "modelo_objetivo": "opencode-go/minimax-m3",
+
   "max_iteraciones": 3,
   "umbral_convergencia": 0.5,
+
   "validacion_empirica": true,
   "descalificar_fallida": false,
-  "smoke_test": false
+  "smoke_test": false,
+
+  "step_5_modo": "sintesis_central",
+  "sintesis_final": false,
+  "sintesis_final_modelo": "<same as modelo_objetivo>",
+
+  "multi_eval": false,
+  "multi_eval_modelos": [],
+
+  "max_wall_clock_minutes": 0,
+
+  "filter_low_performers": {
+    "descalificar_debajo_de": 30,
+    "aplicar_en": "iter_>=2",
+    "keep_minimo": 3
+  },
+
+  "if_mejoras_tecnicamente_similares_a_otras": false
 }
