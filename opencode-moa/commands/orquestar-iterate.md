@@ -1,7 +1,7 @@
 ---
 description: Orchestrate with iterate mode (loop until convergence or max_iterations)
 agent: orquestador
-model: opencode-go/minimax-m3:thinking
+model: opencode-go/minimax-m3
 subtask: true
 ---
 

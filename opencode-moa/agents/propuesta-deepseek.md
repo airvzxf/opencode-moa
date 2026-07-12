@@ -1,7 +1,7 @@
 ---
-description: Generates or improves technical proposals (MiniMax-M3-thinking variant)
+description: Generates or improves technical proposals (DeepSeek V4 Pro variant)
 mode: subagent
-model: opencode-go/minimax-m3
+model: opencode-go/deepseek-v4-pro
 temperature: 0.7
 ---
 

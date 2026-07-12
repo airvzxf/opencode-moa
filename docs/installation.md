@@ -5,7 +5,7 @@ This guide covers installation of `opencode-moa` on local machines, remote serve
 ## Prerequisites
 
 - **OpenCode CLI** installed and configured (`opencode --version` should print v1.0.0+)
-- **At least 3 AI model providers** configured in OpenCode (defaults: `opencode-go/glm-5.1`, `opencode-go/kimi-k2.6`, `opencode-go/minimax-m3:thinking`)
+- **At least 3 AI model providers** configured in OpenCode (defaults: `opencode-go/glm-5.1`, `opencode-go/kimi-k2.6`, `opencode-go/minimax-m3`)
 - A POSIX-compliant shell (bash, zsh, fish) for the install commands
 
 ## Installation methods
@@ -50,8 +50,10 @@ This copies:
 ```bash
 # Confirm files are in place
 ls ~/.config/opencode/agents/
-# Should show 7 files: orquestador.md, propuesta-glm.md, propuesta-kimi.md,
-#                      propuesta-mimo.md, evaluador.md, sintetizador.md, validador.md
+# Should show 9 files: orquestador.md,
+#                      propuesta-glm.md, propuesta-kimi.md, propuesta-mimo.md,
+#                      propuesta-deepseek.md, propuesta-minimax.md,
+#                      evaluador.md, sintetizador.md, validador.md
 
 ls ~/.config/opencode/commands/
 # Should show 2 files: orquestar.md, orquestar-iterate.md
@@ -237,7 +239,7 @@ Edit `~/.config/opencode/orquestador.json`:
 
 ```json
 {
-  "modelo_objetivo": "opencode-go/claude-opus-4-thinking"
+  "modelo_objetivo": "opencode-go/claude-opus-4"
 }
 ```
 
@@ -314,6 +316,8 @@ rm ~/.config/opencode/agents/orquestador.md
 rm ~/.config/opencode/agents/propuesta-glm.md
 rm ~/.config/opencode/agents/propuesta-kimi.md
 rm ~/.config/opencode/agents/propuesta-mimo.md
+rm ~/.config/opencode/agents/propuesta-deepseek.md
+rm ~/.config/opencode/agents/propuesta-minimax.md
 rm ~/.config/opencode/agents/evaluador.md
 rm ~/.config/opencode/agents/sintetizador.md
 rm ~/.config/opencode/agents/validador.md
@@ -368,6 +372,57 @@ Restart OpenCode. Custom commands are loaded at startup.
 ```bash
 # Exit OpenCode and start again
 opencode
+```
+
+### Smoke test or `/orquestar` hangs at step 3 (evaluator blocked on permission)
+
+In headless mode (`opencode run …`) the orchestrator and its subagents
+occasionally read files outside the project directory (this is triggered
+when OpenCode's permission resolver normalizes a relative path against
+a different reference point than your shell's `cwd`). The default
+`external_directory: "*"` rule is `ask`, which headless mode cannot
+approve without a TTY.
+
+**Fix:** add a project-level `opencode.jsonc` that allowlists the
+expected paths. Template:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "permission": {
+    "*": "allow",
+    "external_directory": {
+      "/tmp/opencode/<your-test-dir>/*": "allow",
+      "/tmp/opencode/*": "allow",
+      "/home/wolf/.local/share/opencode/*": "allow"
+    }
+  }
+}
+```
+
+A ready-to-copy version lives at
+`examples/opencode.jsonc.test-template` (just rename it to
+`opencode.jsonc` in your test dir).
+
+> **Production users** should NOT use `"*": "allow"`. Keep permissions
+> restrictive (`ask` or `deny` per category) and only allowlist the
+> specific paths you actually need.
+
+### `opencode run --command "/orquestar ..."` returns `UnknownError`
+
+Known issue in OpenCode ≤ 1.17.18 when combining `--command` with
+`--agent`. Workaround: pass the slash command as a positional message
+and select the agent explicitly via `--agent`:
+
+```bash
+opencode run \
+  --agent orquestador \
+  --model minimax-coding-plan/MiniMax-M3 \
+  --auto \
+  --pure \
+  --print-logs \
+  --dir /your/test/dir \
+  "/orquestar --smoke-test=true test smoke"
 ```
 
 ---

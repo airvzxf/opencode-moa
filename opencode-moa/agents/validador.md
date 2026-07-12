@@ -1,7 +1,7 @@
 ---
 description: Empirical validator — executes commands and consults official documentation
 mode: subagent
-model: opencode-go/minimax-m3:thinking
+model: opencode-go/minimax-m3
 temperature: 0.0
 permission:
   edit: deny

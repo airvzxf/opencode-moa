@@ -1,7 +1,7 @@
 ---
 description: Orchestrate a complete multi-model competition (10 steps)
 agent: orquestador
-model: opencode-go/minimax-m3:thinking
+model: opencode-go/minimax-m3
 subtask: true
 ---
 

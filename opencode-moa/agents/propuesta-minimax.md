@@ -1,7 +1,7 @@
 ---
-description: Generates or improves technical proposals (MiniMax-M3-thinking variant)
+description: Generates or improves technical proposals (MiniMax-M3 via minimax-coding-plan)
 mode: subagent
-model: opencode-go/minimax-m3
+model: minimax-coding-plan/MiniMax-M3
 temperature: 0.7
 ---
 
