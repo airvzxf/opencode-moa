@@ -8,6 +8,10 @@ All notable changes to `opencode-moa` are documented here. The format is based o
 
 - Removed all line-count quotas from proposal agents, the evaluator, the validator, the synthesizer, and the orchestrator prompts. Output length now follows the scope and completeness requirements of each task instead of fixed minimums or maximums.
 - Replaced line-count-based resumability checks in the design specification with content-based validation of required sections and substantive Markdown output.
+- Removed proposal-level tool-call budgets, predicted build-duration gates, dependency-count cutoffs, and score-based roster filtering. Proposers may use the research and validation work their scope requires while every configured agent remains available in later iterations.
+- `step_1_concurrent_max` now drives the actual batch size. Each response must emit exactly `min(batch_size, remaining_agents)` sibling `task()` calls, restoring parallel execution within batches while numbered steps remain sequential.
+- Removed the invalid jq model lookup and silent MiniMax fallback; each task now uses the validated `agente_modelos` map from step 0 and aborts when an agent lacks a model.
+- Restored `max_wall_clock_minutes: 0` as the unlimited default. Positive values remain available as an explicit opt-in global cutoff.
 
 ### Changed (v1.3 — 2026-07-13, in local testing, not yet released)
 

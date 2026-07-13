@@ -36,7 +36,7 @@ restore of `propuesta-minimax-maintainable` (v1.3.1 addendum).
 | 5 | `propuesta-mimo` | `opencode-go/mimo-v2.5-pro` | $0.36 | Only iced 0.14 verified |
 | 6 | `propuesta-qwen37-plus` | `opencode-go/qwen3.7-plus` | $0.08 | Only GTK3 representative + cheapest legitimate |
 
-**35 MiniMax Token Plan agents** (all bind to `model: minimax-coding-plan/MiniMax-M3`):
+**36 MiniMax Token Plan agents** (all bind to `model: minimax-coding-plan/MiniMax-M3`):
 
 | Group | # agents | Naming | Rationale |
 |---|---:|---|---|
@@ -46,22 +46,22 @@ restore of `propuesta-minimax-maintainable` (v1.3.1 addendum).
 | C — Temperature sweep | 4 | `propuesta-minimax-T{05,07,10,15}` | T ∈ {0.5, 0.7, 1.0, 1.5}. T=1.5 is out-of-Anthropic-spec — verifies whether MiniMax clamps it. Trimmed from 7 in v1.2.1 to 4 in v1.3 (dropped T00/T03/T08 for compatibility or single-window trap). |
 | C — top_p sweep | 1 | `propuesta-minimax-P099` | top_p = 0.99 at T=0.7. Only P099 kept — P01/P05/P09 dropped (Tauri cluster or redundant). |
 | C — Combos | 2 | `propuesta-minimax-T{05K50,10K200}` | Mid-range combinations. T10K200 is the only proposal with honest clamp-admission (§5.7 in paper draft). |
-| **Total** | **35** | | |
+| **Total** | **36** | | |
 
-**Grand total: 6 + 35 = 41 agentes_a_competir.**
+**Grand total: 6 + 36 = 42 agentes_a_competir.**
 
 ### Cost estimate (per iter-1, extrapolated from Run C v5)
 
 - OCG (6 of 11 kept): ~$2.10 vs $4.44 full (–$2.34, –53%)
-- MiniMax (35 vs 41): ~$0.14 vs $0.16 (–$0.02, –13%)
+- MiniMax (36 vs 41): ~$0.14 vs $0.16 (–$0.02, –13%)
 - **Total:** ~$2.24 vs $4.60 (–$2.36, –51%)
 - Cache hit rate: ~91% of input tokens served from cache (the dominant cost-optimization factor)
 
 ### Wall-clock estimate (per iter-1, at step_1_concurrent_max=3)
 
-- Step 1: 41 agentes / 3 concurrent = 14 batches × ~9 min = ~126 min (vs 165 min for 52-agent)
+- Step 1: 42 agentes / 3 concurrent = 14 batches × ~9 min = ~126 min (vs 165 min for 52-agent)
 - Steps 3-9: ~30 min (unchanged)
-- **Total:** ~156 min (vs 200 min, –22%) — leaves ~24 min headroom in the 180 min cap for iter-2
+- **Total:** ~156 min (vs 200 min, –22%). `max_wall_clock_minutes: 0` leaves the run unlimited by default.
 
 ### Drop rationale (why these specific agents were removed)
 
@@ -424,14 +424,19 @@ sustained**. Bursting more risks hitting the 5-hour rolling quota
 or getting throttled by the gateway. The user's plan is on Max tier
 ($50/month, 5.1B tokens/month, 4-5 concurrent).
 
-v1.2 introduces `step_1_concurrent_max` (default 3). Step 1 of the
-orchestrator now launches propuesta subagents in batches of 3:
+v1.2 introduces `step_1_concurrent_max` (default 3). The orchestrator
+uses the merged configuration value as the batch size. Every step 1
+response must contain exactly
+`min(step_1_concurrent_max, remaining_agents)` sibling `task()` calls;
+those siblings run in parallel, and the next batch waits for the whole
+current batch to return:
 
-- 41 agents / 3 per batch = 14 batches
+- 42 agents / 3 per batch = 14 batches
+- Each response launches exactly 3 siblings, except the final partial batch
 - Each batch waits for completion before the next launches
 - Peak concurrent MiniMax agents: 3 in step 1, +1 evaluador at step
   3 transition = 4 (within Max tier ceiling)
-- Step 1 wall time: ~21 min (vs ~6 min unbounded)
+- Step 1 wall time: ~21 min estimated (vs ~6 min unbounded)
 
 `step_1_agent_timeout_seconds` (default 600) hard-caps each
 propuesta subagent. If a subagent exceeds 10 min, it is ABORTED and
@@ -444,9 +449,12 @@ After running the v1.2 experiment, the user pointed out that if
 batch (via LLM batching across steps), peak concurrent MiniMax agents
 could exceed the Max-tier ceiling. The fix:
 
-- Steps are **STRICTLY SEQUENTIAL**. Step 1 must complete entirely
-  (all batches done, all files written or timed out) before step 3
-  launches. Step 3 must complete before step 4. Etc.
+- Steps are **STRICTLY SEQUENTIAL relative to other numbered steps**.
+  This rule must never serialize sibling agents inside one step 1 batch;
+  those sibling `task()` calls remain parallel in the same response.
+  Step 1 must complete entirely (all batches done, all files written or
+  timed out) before step 3 launches. Step 3 must complete before step 4.
+  Etc.
 - **DO NOT combine step 1 task() calls with step 3+ task() calls
   in the same response.** If the LLM is tempted, split into two
   responses: response 1 = all step 1 batch task() calls; response 2
