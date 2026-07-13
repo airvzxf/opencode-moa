@@ -169,7 +169,7 @@ You receive a prompt with:
 [Summary of empirical viability state, with global score and critical sections]
 ```
 
-Minimum 30 lines, 6 mandatory sections.
+All six sections are mandatory. Report every relevant finding regardless of output length; never use line count as a completeness criterion.
 
 # Principles
 

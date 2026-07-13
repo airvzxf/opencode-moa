@@ -58,6 +58,7 @@ If `descalificar_fallida == true` AND global viability < 3/10: mark as DESCALIFI
 
 - **Do not inflate scores**. Be strict. Your temperature is 0.0.
 - **Evaluate ALL proposals**, even the one you generated in another step (if applicable).
+- **Length-neutral**: never reward or penalize a proposal for its line count. Judge whether its detail is appropriate to the project's scope and requirements.
 - **Cite evidence**: each score must have 1-2 phrases from the proposal text that justify it.
 
 # Output format
@@ -104,5 +105,3 @@ If `descalificar_fallida == true` AND global viability < 3/10: mark as DESCALIFI
 [If any score is particularly high or low, explain why]
 [If there are very similar proposals, mention it]
 ```
-
-Minimum 80 lines.
