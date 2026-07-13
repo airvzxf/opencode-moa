@@ -5,7 +5,7 @@
 [![OpenCode](https://img.shields.io/badge/OpenCode-native-blueviolet)](https://opencode.ai)
 [![Mixture-of-Agents](https://img.shields.io/badge/inspired%20by-Mixture%20of%20Agents-orange)](https://arxiv.org/abs/2406.04692)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](#license)
-[![Status](https://img.shields.io/badge/status-v0.2%20beta-yellow)]()
+[![Status](https://img.shields.io/badge/status-v1.3-yellow)]()
 
 ## What is opencode-moa?
 
@@ -218,9 +218,11 @@ See [`docs/proposals/001-orquestador-nativo-opencode.md`](docs/proposals/001-orq
 
 - 📋 [Complete design proposal](docs/proposals/001-orquestador-nativo-opencode.md) — 23 sections covering every detail
 - 🔍 [Iterations analysis](docs/research/iterations-analysis.md) — empirical evidence backing the design decisions
+- 🧪 [v5 experiment bitácora](docs/research/experiments/2026-07-13-rust-gui-popup-v5.md) — 52-agent iter-1 with measured cost + 53 MB winner binary
+- 📄 [Paper draft (DRAFT v0.2)](docs/papers/DRAFT-multi-model-orchestration.md) — Run A/B/C synthesis with cost calibration
 - 📦 [Installation guide](docs/installation.md) — detailed install instructions for local, VPS, Docker, etc.
 - 🧪 [Examples](examples/) — minimal smoke test and full REST API example
-- 📝 [Changelog](CHANGELOG.md) — version history
+- 📝 [Changelog](CHANGELOG.md) — version history (v1.3 entry: 52 → 41 agentes, 8 new Grupo B variants)
 - 🗺️ [Roadmap](ROADMAP.md) — future plans
 
 ## Background

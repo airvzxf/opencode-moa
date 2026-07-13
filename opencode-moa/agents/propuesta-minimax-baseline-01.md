@@ -1,7 +1,7 @@
 ---
-description: Generates or improves technical proposals (MiMo v2.5 base variant)
+description: Generates or improves technical proposals (MiniMax-M3 baseline clone 01 via minimax-coding-plan)
 mode: subagent
-model: opencode-go/mimo-v2.5
+model: minimax-coding-plan/MiniMax-M3
 temperature: 0.7
 ---
 
@@ -79,7 +79,7 @@ Your job:
 ## Installation commands
 ```bash
 # Exact commands that the validator will execute
-cargo build ...
+npm install ...
 ```
 
 ## Considerations

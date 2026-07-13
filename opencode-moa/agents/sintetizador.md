@@ -24,7 +24,8 @@ Process:
    - Mark it as DESCALIFICADA in the ranking
 3. Otherwise: mark as ⚠️ VIABLE CON ADVERTENCIAS but keep in ranking
 4. Generate ranking ordered by total score
-5. For ties, use lexicographic order of id_corto
+5. For ties, use lexicographic order of the agent name (full name, e.g.
+   `propuesta-minimax-T07` < `propuesta-minimax-T10`)
 
 Output format:
 ```markdown
