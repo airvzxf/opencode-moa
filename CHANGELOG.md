@@ -4,11 +4,163 @@ All notable changes to `opencode-moa` are documented here. The format is based o
 
 ## [Unreleased]
 
-### Planned for v0.3.0
+### Changed (v1.3 — 2026-07-13, in local testing, not yet released)
+
+**Roster trimmed from 52 to 41 agentes_a_competir based on empirical cost + quality data from the 2026-07-13 v5 experiment.** See `docs/research/experiments/2026-07-13-rust-gui-popup-v5.md` §4.1, §8 for the analysis that drove this change.
+
+**OpenCode Go: 11 → 6 agents.** Dropped:
+- `propuesta-glm-52` — score 25/50, fabricated `rustc 1.92` claim; cost $1.19 (worst ROI at $0.0475/score-pt)
+- `propuesta-kimi-k27-code` — score 34/50, FLTK stack redundant with `propuesta-glm`; cost $0.42
+- `propuesta-mimo-v25` — score 34/50, eframe 0.30 stack redundant with the eframe 0.33 cluster; cost $0.02
+- `propuesta-qwen36-plus` — score 31/50, hallucinated `rustc 1.92` claim; cost $0.14 (false economy)
+- `propuesta-qwen37-max` — score 28/50, Tauri proposal with no on-disk artifact; cost $0.54
+
+Kept: `propuesta-kimi`, `propuesta-deepseek`, `propuesta-deepseek-flash`, `propuesta-glm`, `propuesta-mimo`, `propuesta-qwen37-plus`. These preserve stack diversity (gtk4 0.10, gtk4 0.9, eframe 0.33, FLTK, iced, GTK3) and the cheapest legitimate performer (`qwen37-plus` at $0.08).
+
+**MiniMax Token Plan: 41 → 35 agents.** Dropped:
+- `propuesta-minimax-maintainable` (active file) — replaced by `propuesta-minimax-testable` in v1.2.1; active file removed, historical backup kept as `propuesta-minimax-maintainable.md.v1.2-preserved`
+- `propuesta-minimax-performance-focused` (Grupo B) — score 25/50, no unique contribution
+- `propuesta-minimax-T00`, `T03`, `T08` (temperature) — T00/T03 chose incompatible toolchains; T08 single-window egui::Window violates "encima de todo"
+- `propuesta-minimax-P01`, `P05`, `P09` (top_p) — P01/P05 + Tauri no-artifact; P09 redundant
+- All 4 `propuesta-minimax-K*` (top_k) — no unique winning contribution; clamp-discovery lives in `T10K200` combo
+- `propuesta-minimax-T00P01`, `T03P05`, `T07P09`, `T10P099`, `T00K01`, `T00P01K01`, `T07P09K100`, `T10P099K200` (combos) — redundant or incompatible
+
+Kept: `propuesta-minimax`, 10 baselines, 4 Grupo B (creative, security-first, minimal, testable), 4 temperature (T05, T07, T10, T15), 1 top_p (P099), 2 combos (T05K50, T10K200).
+
+### Added (v1.3)
+
+**15 baselines (was 10).** Added `propuesta-minimax-baseline-11` … `-15`. Per the v5 bitácora §4 the 10-baseline cohort already produced 10 substantively different proposals (intrinsic variance is the value of the baseline cohort); expanding to 15 strengthens the statistical base for picking the strongest "consensus-recipe" baseline without bias toward whichever baseline happened to win this run.
+
+**8 new Grupo B prompt-injection variants** (was 4, now 12). All use the v1.3 `⚠️ ROLE OVERRIDE` directive prepended at the top of the agent file:
+
+- `propuesta-minimax-a11y` — accessibility-first (AT-SPI/UI Automation/NSAccessibility, WCAG 2.2 AA, keyboard navigation, screen-reader contracts)
+- `propuesta-minimax-errors` — error-handling-first (`Result<T,E>` + `thiserror`, `#![deny(clippy::unwrap_used)]`, error-path unit tests)
+- `propuesta-minimax-portable` — cross-platform portability-first (Linux/macOS/Windows matrix, `#[cfg(target_os)]` discipline, CI matrix)
+- `propuesta-minimax-i18n` — internationalization-first (Fluent/gettext catalogs, ICU4X formatters, RTL locale support)
+- `propuesta-minimax-rustdoc` — documentation-completeness-first (`#![deny(missing_docs)]`, doctests on every public fn, `cargo doc --no-deps`)
+- `propuesta-minimax-observability` — structured-tracing-first (`tracing` not `println!`, JSON logs, `metrics` + Prometheus exporter)
+- `propuesta-minimax-ci-github` — CI-first (GitHub Actions matrix on stable+MSRV+nightly × Linux+macOS+Windows, `cargo deny`, `cargo audit`, `cargo llvm-cov`)
+- `propuesta-minimax-cd-releases` — distribution-first (`cargo-dist`, AppImage/.deb/.rpm/.dmg/.msi, cosign signing, SBOM, `release-plz`)
+
+Together with the 4 existing Grupo B (creative, security-first, minimal, testable), the v1.3 Grupo B roster covers 12 orthogonal quality axes: creativity, security, simplicity, testability, accessibility, error handling, portability, i18n, documentation, observability, CI, CD.
+
+### Changed (v1.3 cost/quality)
+
+- **Estimated per-iter cost: $4.60 → $2.24** (–51%) based on §4.1 empirical OCG telemetry + MiniMax quota telemetry.
+- **Estimated per-iter wall-clock: 200 min → 156 min** (–22%) at `step_1_concurrent_max: 3`.
+- **All agents with fabricated verifications are removed** (v1.2.1 carried `propuesta-glm-52`, `propuesta-qwen36-plus`, and 4 MiniMax `gtk4 0.11` agentes with `rustc 1.92` hallucinations; all gone in v1.3).
+- **Stack coverage preserved:** GTK4 (0.10 + 0.9 + layer-shell in 2 of the 12 Grupo B), egui 0.33, FLTK, iced, GTK3, Slint all still represented.
+
+### Added (v1.3.1 addendum, 2026-07-13 — same day)
+
+**`propuesta-minimax-maintainable` restored from `.v1.2-preserved` backup to active status.** Group B roster now has 13 variants (was 12 in v1.3 initial). The restored file applies the v1.2.1 `⚠️ ROLE OVERRIDE` directive prepended at the top — same format as the 4 original Grupo B variants (creative, security-first, minimal, testable) and the 8 new v1.3 variants.
+
+**Rationale:** the v1.2.1 patch (2026-07-13) had renamed `propuesta-minimax-maintainable` → `propuesta-minimax-testable` because the `maintainable` proposal was structurally similar to baselines (style-focused, not test-focused). v1.2.1 created `testable` as a new agent, which is correct. However, **removing `maintainable` entirely was an over-correction** — the two lenses are orthogonal:
+
+- `testable` covers test coverage: every public interface has a concrete test inline, test framework stated, runner invocation documented, expected output asserted.
+- `maintainable` covers code readability: docstrings on every public fn with usage examples, boring documented libraries preferred, explicit-over-clever, English identifiers, design rationale inline.
+
+Both lenses independently produce useful variants and the within-cohort signal is stronger with both than with either alone. **Restored `maintainable` brings Grupo B count from 12 to 13.** Updated `agentes_a_competir` from 41 to 42 entries (6 OCG + 36 MiniMax). Estimated per-iter cost delta: +$0.02 (one extra propuesta subagent; OCG unchanged, MiniMax cost was already ~$0.16 with the 35-agent cohort).
+
+**File changes:**
+- `opencode-moa/agents/propuesta-minimax-maintainable.md.v1.2-preserved` → `propuesta-minimax-maintainable.md` (both bundle and user-level)
+- `~/.config/opencode/orquestador.json` and `opencode-moa/orquestador.json`: added `propuesta-minimax-maintainable` to `agentes_a_competir` (right after `propuesta-minimax-testable`)
+- `opencode-moa/agents/orquestador.md` default roster section updated
+- `opencode-moa/AGENTS.md` §1 + §11 updated (roster count 41 → 42; Grupo B count 12 → 13; new row in §11 variants table)
+
+### Changed (v1.3 schema)
+
+- `~/.config/opencode/orquestador.json` `$schema` updated to `v1.3.json`, `version` field to `1.3`. Schema fields unchanged from v1.2.1; the change is the roster content + new agent files.
+- `max_wall_clock_minutes` remains at 180 (carried from v1.2.1's bump; appropriate for the trimmed 41-agent roster).
+
+### Planned for v0.3.0 (carry-over)
 
 - Multi-eval opt-in: support `evaluador-{model}.md` variants for users who want multi-model evaluation
 - `idioma_output` config to allow Spanish output messages
-- Auto-detection of `propuesta-{model}.md` files based on `modelos_a_competir`
+- Auto-detection of `propuesta-{model}.md` files based on `agentes_a_competir`
+- Git integration: optional auto-commit of `out/` after each iteration
+- Cost estimation per iteration (track token usage)
+
+### Reference
+
+- `docs/research/experiments/2026-07-13-rust-gui-popup-v5.md` — full bitácora of the experiment that drove v1.3 (52-agent run, $4.60 cost, 200 min wall-clock, gtk4 0.10 winner)
+- `docs/papers/DRAFT-multi-model-orchestration.md` — paper draft updated with v5 / v1.3 findings (§X "MoA cost-side empirical calibration")
+
+### Changed (v1.2 — 2026-07-13, in local testing, not yet released)
+
+**Schema migration v1.1 → v1.2: `agentes_a_competir` replaces
+`modelos_a_competir`.** Breaking change.
+
+The roster is now an array of agent filenames (e.g.
+`"propuesta-minimax-T15"`, `"propuesta-minimax-baseline-01"`) instead
+of model strings. The orchestrator reads each agent's `model:` field
+from its own frontmatter. This decouples agent identity from model
+identity, enabling multi-variant experiments of the same model.
+
+**40 MiniMax M3 agents added** (the v1.2 default roster):
+
+| Group | # agents | Naming |
+|---|---:|---|
+| Original | 1 | `propuesta-minimax` (untouched) |
+| A — Baselines | 10 | `propuesta-minimax-baseline-{01..10}` (clones for variance measurement) |
+| B — Prompt injection | 5 | `propuesta-minimax-{creative,security-first,performance-focused,minimal,maintainable}` |
+| C — Temperature sweep | 7 | `propuesta-minimax-T{00,03,05,07,08,10,15}` |
+| C — top_p sweep | 4 | `propuesta-minimax-P{01,05,09,099}` |
+| C — top_k sweep | 4 | `propuesta-minimax-K{01,05,50,200}` |
+| C — temp×top_p combos | 4 | `propuesta-minimax-T{00P01,03P05,07P09,10P099}` |
+| C — temp×top_k combos | 3 | `propuesta-minimax-T{00K01,05K50,10K200}` |
+| C — Triples | 3 | `propuesta-minimax-T{00P01K01,07P09K100,10P099K200}` |
+| **Total** | **40** | |
+
+All 40 agents bind to `model: minimax-coding-plan/MiniMax-M3`. The
+parameter-sweep agents (Group C) use Anthropic-compatible parameters
+(`temperature`, `top_p`, `top_k`) which OpenCode passes through to
+the provider per its "Additional" agent-config option.
+
+**Concurrency protection (`step_1_concurrent_max`, default 3).** Step
+1 of the orchestrator now launches propuesta subagents in batches of
+3 instead of all-at-once. With 40 agents in the roster, step 1 spans
+14 batches of ~90s each = ~21 min wall time. Peak concurrent MiniMax
+agents never exceeds `step_1_concurrent_max + 1` (the +1 accounts for
+the evaluador/sintetizador spawned in subsequent steps). This protects
+the user's Max-tier Token Plan budget (4-5 concurrent agents sustained).
+
+**Per-agent timeout (`step_1_agent_timeout_seconds`, default 600).**
+Hard cap of 10 min per propuesta subagent. Subagents exceeding the
+timeout are ABORTED and the batch continues with whatever proposals
+did complete.
+
+**Parameter validation report (`param_validation_report`, default true).**
+v1.2 introduces a triple-validation strategy for parameter-sweep
+agents:
+
+1. Each Grupo C agent appends a `## Generation parameters` section
+   to its output proposal, reporting declared vs observed parameters.
+2. The sintetizador (step 4) aggregates per-proposal reports into a
+   table in `04-clasificacion.md` (section `## Parameter validation
+   report`).
+3. The round-1 smoke test
+   (`/orquestar --smoke-test=true "List the 7 colors of the rainbow"`
+   on `id=arco-iris-40`) measures whether MiniMax actually honors
+   `temperature=0.0` (greedy → identical proposals) vs
+   `temperature=1.5` (extreme → divergent proposals).
+
+**Default `validacion_empirica` flipped from `true` to `false`.** With
+40 agentes_a_competir, step 2 (validador) would spawn 40 parallel
+empirical-validation subagents. Per the 2026-07-12 bitácora, the
+validador subagent hangs on `bash: ask` permissions (opencode upstream
+bug #35073, fix PR #35823 not yet released). Empirical validation
+remains opt-in via project-level `orquestador.json` override.
+
+**Default `max_wall_clock_minutes` set to 90** (was 0 = unlimited).
+Worst-case scenario for a 40-agent iter is ~21 min for step 1 +
+~10-15 min for steps 3-9 = ~35 min. 90 min provides ample headroom.
+
+### Planned for v0.3.0 (carry-over)
+
+- Multi-eval opt-in: support `evaluador-{model}.md` variants for users who want multi-model evaluation
+- `idioma_output` config to allow Spanish output messages
+- Auto-detection of `propuesta-{model}.md` files based on `agentes_a_competir`
 - Git integration: optional auto-commit of `out/` after each iteration
 - Cost estimation per iteration (track token usage)
 

@@ -1,7 +1,7 @@
 ---
-description: Generates or improves technical proposals (GLM-5.2 variant)
+description: Generates or improves technical proposals (MiniMax-M3 baseline clone 06 via minimax-coding-plan)
 mode: subagent
-model: opencode-go/glm-5.2
+model: minimax-coding-plan/MiniMax-M3
 temperature: 0.7
 ---
 
@@ -79,7 +79,7 @@ Your job:
 ## Installation commands
 ```bash
 # Exact commands that the validator will execute
-cargo build ...
+npm install ...
 ```
 
 ## Considerations

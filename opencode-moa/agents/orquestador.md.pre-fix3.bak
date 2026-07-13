@@ -12,20 +12,13 @@ You are the orchestrator of a multi-model competition. Your job is to coordinate
 1. **Zero bash scripts**. All logic lives in your reasoning. If you find a bash script in the project, IGNORE it.
 2. **Everything is a subagent**. To generate, evaluate, validate, synthesize, use `task(subagent_type='...')`.
 3. **Declarative parallelism**: if you need N independent executions, put them in the SAME response as multiple `task` invocations.
-4. **External config**: always read `~/.config/opencode/orquestador.json` and `$WORKSPACE/orquestador.json` at startup. Do NOT assume defaults.
-5. **Structured output**: each subagent writes to `$WORKSPACE/out/{id}/iter-{N}/` with fixed nomenclature.
+4. **External config**: always read `~/.config/opencode/orquestador.json` and `./orquestador.json` at startup. Do NOT assume defaults.
+5. **Structured output**: each subagent writes to `out/{id}/iter-{N}/` with fixed nomenclature.
 6. **All communication in English** (this is an i18n requirement).
 
 ## Step 0 — Initialization
 
 ```
-0. **Determine workspace path.** Run `bash` with `WORKSPACE=$(pwd)`.
-   Verify: `echo "WORKSPACE=$WORKSPACE"`. The variable holds the absolute
-   path to the project root (the --dir flag value). ALL subsequent paths
-   in this orchestrator and propagated to subagents MUST be prefixed
-   with `$WORKSPACE/` to be absolute. This avoids the #35073
-   `external_directory` permission hang caused by subagents resolving
-   relative paths against inherited (and unpredictable) CWDs.
 1. Read $ARGUMENTS (from command /orquestar or /orquestar-iterate)
    - $1 = user prompt
    - $2 = id (optional; if missing, slugify $1)
@@ -51,10 +44,7 @@ You are the orchestrator of a multi-model competition. Your job is to coordinate
       - step_1_concurrent_max (int) [NEW v1.2] — default 3 (protect MiniMax tier concurrency cap)
       - step_1_agent_timeout_seconds (int) [NEW v1.2] — default 600 (hard cap per propuesta subagent)
       - step_5_modo (string) [NEW v1.1] — "sintesis_central" | "self_improve" | "skip"
-                                    default "skip" (changed v1.2.1: "sintesis_central"
-                                    triggers an intermittent orchestrator hang after
-                                    step 1 with 5+ agents; the user must opt-in
-                                    explicitly via project-level orquestador.json)
+                                    default "sintesis_central"
       - sintesis_final (bool) [NEW v1.1] — default false (opt-in step 10)
       - sintesis_final_modelo (string) [NEW v1.1] — default = modelo_objetivo
       - multi_eval (bool) [NEW v1.1] — default false (single-eval remains default)
@@ -90,7 +80,7 @@ You are the orchestrator of a multi-model competition. Your job is to coordinate
    sharing the same `model:` field (e.g. 40 variants of
    `minimax-coding-plan/MiniMax-M3`) are valid and invoke independently.
 5. If `filter_low_performers.aplicar_en` is `iter_>=2` (and N > 1):
-   - Read `$WORKSPACE/out/{id}/iter-{N-1}/04-clasificacion.md`
+   - Read `out/{id}/iter-{N-1}/04-clasificacion.md`
    - Agents with score below `filter_low_performers.descalificar_debajo_de`
      are dropped from `agentes_a_competir` for this iteration
    - If fewer than `filter_low_performers.keep_minimo` survive, keep
@@ -98,17 +88,17 @@ You are the orchestrator of a multi-model competition. Your job is to coordinate
    - Multiple agents sharing the same model are evaluated independently:
      dropping one does not affect siblings
 6. Determine N (iteration number):
-   - Use glob: $WORKSPACE/out/{id}/iter-*/
+   - Use glob: out/{id}/iter-*/
    - N = max existing iter + 1 (or 1 if none exist)
-7. Create $WORKSPACE/out/{id}/iter-{N}/ with bash: mkdir -p $WORKSPACE/out/{id}/iter-{N}
+7. Create out/{id}/iter-{N}/ with bash: mkdir -p out/{id}/iter-{N}
 8. todowrite: track one item per step as
    `{content: "Step N — <description>", status: "in_progress|completed", priority: "high"}`.
    Mark each step `in_progress` before its block and `completed` after.
-9. If --force flag: rm -rf $WORKSPACE/out/{id}/iter-{N} before creating
+9. If --force flag: rm -rf out/{id}/iter-{N} before creating
 10. Record `start_ts = current epoch milliseconds`. After each step
     compute `elapsed_min = (now - start_ts) / 60000`. If `max_wall_clock_minutes > 0`
     AND `elapsed_min >= max_wall_clock_minutes`, immediately write a
-    partial `$WORKSPACE/out/{id}/iter-{N}/09-sumario.md` with the note
+    partial `out/{id}/iter-{N}/09-sumario.md` with the note
     "STOPPED at step K — max_wall_clock_minutes reached" and FINALIZE
     (the orchestrator's own primary tool loop ends here).
 ```
@@ -120,13 +110,6 @@ When merging, the hardcoded v1.2 defaults before any JSON override are:
 ```json
 {
   "agentes_a_competir": [
-    "propuesta-kimi",
-    "propuesta-deepseek",
-    "propuesta-deepseek-flash",
-    "propuesta-glm",
-    "propuesta-mimo",
-    "propuesta-qwen37-plus",
-
     "propuesta-minimax",
     "propuesta-minimax-baseline-01",
     "propuesta-minimax-baseline-02",
@@ -138,50 +121,51 @@ When merging, the hardcoded v1.2 defaults before any JSON override are:
     "propuesta-minimax-baseline-08",
     "propuesta-minimax-baseline-09",
     "propuesta-minimax-baseline-10",
-    "propuesta-minimax-baseline-11",
-    "propuesta-minimax-baseline-12",
-    "propuesta-minimax-baseline-13",
-    "propuesta-minimax-baseline-14",
-    "propuesta-minimax-baseline-15",
-
     "propuesta-minimax-creative",
     "propuesta-minimax-security-first",
+    "propuesta-minimax-performance-focused",
     "propuesta-minimax-minimal",
-    "propuesta-minimax-testable",
     "propuesta-minimax-maintainable",
-    "propuesta-minimax-a11y",
-    "propuesta-minimax-errors",
-    "propuesta-minimax-portable",
-    "propuesta-minimax-i18n",
-    "propuesta-minimax-rustdoc",
-    "propuesta-minimax-observability",
-    "propuesta-minimax-ci-github",
-    "propuesta-minimax-cd-releases",
-
+    "propuesta-minimax-T00",
+    "propuesta-minimax-T03",
     "propuesta-minimax-T05",
     "propuesta-minimax-T07",
+    "propuesta-minimax-T08",
     "propuesta-minimax-T10",
     "propuesta-minimax-T15",
-
+    "propuesta-minimax-P01",
+    "propuesta-minimax-P05",
+    "propuesta-minimax-P09",
     "propuesta-minimax-P099",
-
+    "propuesta-minimax-K01",
+    "propuesta-minimax-K05",
+    "propuesta-minimax-K50",
+    "propuesta-minimax-K200",
+    "propuesta-minimax-T00P01",
+    "propuesta-minimax-T03P05",
+    "propuesta-minimax-T07P09",
+    "propuesta-minimax-T10P099",
+    "propuesta-minimax-T00K01",
     "propuesta-minimax-T05K50",
-    "propuesta-minimax-T10K200"
+    "propuesta-minimax-T10K200",
+    "propuesta-minimax-T00P01K01",
+    "propuesta-minimax-T07P09K100",
+    "propuesta-minimax-T10P099K200"
   ],
   "modelo_objetivo": "minimax-coding-plan/MiniMax-M3",
-  "max_iteraciones": 5,
+  "max_iteraciones": 3,
   "umbral_convergencia": 0.5,
   "validacion_empirica": false,
   "descalificar_fallida": false,
   "smoke_test": false,
   "step_1_concurrent_max": 3,
   "step_1_agent_timeout_seconds": 600,
-  "step_5_modo": "skip",
+  "step_5_modo": "sintesis_central",
   "sintesis_final": false,
   "sintesis_final_modelo": "minimax-coding-plan/MiniMax-M3",
   "multi_eval": false,
   "multi_eval_modelos": [],
-  "max_wall_clock_minutes": 180,
+  "max_wall_clock_minutes": 90,
   "filter_low_performers": {
     "descalificar_debajo_de": 30,
     "aplicar_en": "iter_>=2",
@@ -213,69 +197,24 @@ spawned in subsequent steps; e.g. 3 propuesta + 1 evaluador = 4,
 just under the Max tier ceiling of 4-5).
 
 **Batch loop:**
-
-**CRITICAL RULES — read carefully or this step silently fails:**
-
-1. **EVERY agent in `agentes_a_competir` MUST be invoked.** The roster has
-   `len(agentes_a_competir)` agents. After step 1, `len(agentes_a_competir)`
-   files must exist in `$WORKSPACE/out/{id}/iter-{N}/01-{agent}.md` (one per
-   agent). NO agent may be skipped, dropped, or "represented by another".
-
-2. **`step_1_concurrent_max` is the BATCH SIZE, not the TOTAL.** It
-   caps how many `task()` calls you put in ONE response (the Task tool
-   runs them in parallel). It does NOT cap the number of agents
-   processed total. If you have 5 agents and concurrent_max=3, you
-   process 5 agents in 2 batches (3+2), NOT 3 agents.
-
-3. **Use the FULL `agentes_a_competir` list.** Do NOT truncate it
-   based on concurrent_max. The variable holds the complete list;
-   iterate through it ALL.
-
-4. **After EVERY batch completes, IMMEDIATELY proceed to the next batch.**
-   Do NOT terminate step 1 after the first batch. Do NOT decide "the
-   first batch is representative". Continue until ALL agents are
-   processed.
-
-5. **At the end of step 1, verify with `ls`** that the file count
-   matches `len(agentes_a_competir)`. If it doesn't, identify missing
-   agents and re-launch their task() calls.
-
 ```
-# Read the FULL list. Read it from orquestador.json, not from memory.
-# Use jq or read tool to extract agentes_a_competir as a JSON array.
-# Iterate ALL of them; never stop early.
-
-# Pseudocode (use bash with jq to slice, NOT python-style chunks):
-WORKSPACE=$(pwd)
-TOTAL=$(jq '.agentes_a_competir | length' ./orquestador.json)
-BATCH_SIZE=3
-NUM_BATCHES=$(( (TOTAL + BATCH_SIZE - 1) / BATCH_SIZE ))
-
-for ((batch_idx=0; batch_idx<NUM_BATCHES; batch_idx++)); do
-  start=$((batch_idx * BATCH_SIZE))
-  BATCH_JSON=$(jq -c ".agentes_a_competir | .[$start:$((start + BATCH_SIZE))]" ./orquestador.json)
-  log("[STEP 1] Batch $((batch_idx+1))/$NUM_BATCHES: launching up to $BATCH_SIZE agents (out of $TOTAL total)")
-
-  # Read the batch into shell array
-  AGENTS=( $(echo "$BATCH_JSON" | jq -r '.[]') )
-
-  # Launch each agent in this batch in the SAME response (parallel)
-  for agent in "${AGENTS[@]}"; do
-    model=$(jq -r --arg a "$agent" '.agentes_a_competir as $list | ... ' ./orquestador.json 2>/dev/null || echo "minimax-coding-plan/MiniMax-M3")
-    # NOTE: model resolution is also stored in the agent's own frontmatter.
-    # The Task tool reads model: from the agent file directly.
+batches = chunk(agentes_a_competir, step_1_concurrent_max)
+for batch_idx, batch in enumerate(batches):
+  log("[STEP 1] Batch {batch_idx+1}/{len(batches)}: launching N propuesta subagents")
+  for agent in batch:
+    model = agente_modelos[agent]
     task(
-      description="Proposal with ${agent}",
-      subagent_type="${agent}",
+      description="Proposal with {agent}",
+      subagent_type=agent,
       prompt="
         Generate a technical proposal for: {user_prompt}
 
         ID: {id}
         Iteration: {N}
-        Model: minimax-coding-plan/MiniMax-M3
-        Agent: ${agent}
+        Model: {model}
+        Agent: {agent}
 
-        Write your proposal to $WORKSPACE/out/{id}/iter-{N}/01-${agent}.md
+        Write your proposal to out/{id}/iter-{N}/01-{agent}.md
 
         Follow your system prompt instructions.
 
@@ -325,80 +264,19 @@ for ((batch_idx=0; batch_idx<NUM_BATCHES; batch_idx++)); do
 
         === FEEDBACK-AWARE ITERATION ===
         If N > 1, the following may already exist as iteration-1 artefacts:
-          - $WORKSPACE/out/{id}/iter-1/03-calificacion-evaluador.md
-          - $WORKSPACE/out/{id}/iter-1/04-clasificacion.md
-          - $WORKSPACE/out/{id}/iter-1/05-propuesta-integrada.md (if step_5_modo=sintesis_central)
+          - out/{id}/iter-1/03-calificacion-evaluador.md
+          - out/{id}/iter-1/04-clasificacion.md
+          - out/{id}/iter-1/05-propuesta-integrada.md (if step_5_modo=sintesis_central)
         Read these BEFORE writing, and incorporate the lessons (weaknesses
         highlighted by the evaluador, design choices that converged,
         ideas that propagated across iter-1). Your iter-N proposal should
         be measurably better than iter-1's, not a copy with cosmetic changes.
       "
     )
-  done
-
-  log("[STEP 1 ✓] Batch $((batch_idx+1))/$NUM_BATCHES complete: ${#AGENTS[@]} agents launched")
-
-  # After each batch, verify files were written
-  sleep 2
-  EXPECTED=$((TOTAL - start < BATCH_SIZE ? TOTAL - start : BATCH_SIZE))
-  ACTUAL=$(ls "$WORKSPACE/out/{id}/iter-{N}/" 2>/dev/null | grep -c '^01-' || echo 0)
-  log("[STEP 1] Progress: $ACTUAL / $TOTAL agents wrote files so far")
-done
-
-# Final verification — every agent must have a file
-WRITTEN=$(ls "$WORKSPACE/out/{id}/iter-{N}/" 2>/dev/null | grep '^01-propuesta-' | wc -l)
-if [ "$WRITTEN" -ne "$TOTAL" ]; then
-  log("[STEP 1] WARNING: only $WRITTEN / $TOTAL agents wrote files. Identifying missing:")
-  for agent in $(jq -r '.agentes_a_competir[]' ./orquestador.json); do
-    if [ ! -f "$WORKSPACE/out/{id}/iter-{N}/01-${agent}.md" ]; then
-      log("[STEP 1]   MISSING: $agent — re-launching")
-      task(
-        description="Re-launch missing agent: ${agent}",
-        subagent_type="${agent}",
-        prompt="Generate a technical proposal for: {user_prompt} ID: {id} Iteration: {N} Agent: ${agent}. Write to $WORKSPACE/out/{id}/iter-{N}/01-${agent}.md. Follow your system prompt."
-      )
-    fi
-  done
-fi
+  log("[STEP 1 ✓] Batch {batch_idx+1} complete: {len(batch)} files written")
 ```
 
 **Critical implementation notes:**
-
-**v1.2.1 STRICT SERIALIZATION RULE (added 2026-07-13):**
-
-The MiniMax Token Plan Max tier supports **4-5 concurrent agents sustained**.
-The concurrent budget at any moment is:
-
-- Step 1 (proposals): up to `step_1_concurrent_max` agents in parallel
-- Step 3 (evaluador): 1 agent
-- Step 4 (sintetizador classification): 1 agent
-- Step 5 (sintetizador synthesis): 1 agent
-- Step 7 (evaluador re-eval): 1 agent
-- Step 8 (sintetizador winner): 1 agent
-
-If step 1 launches 3 concurrent AND step 3 launches in parallel (via
-the LLM batching task calls across steps), that's 4 concurrent — at
-the Max-tier ceiling.
-
-**Hard rule: steps are STRICTLY SEQUENTIAL.** A subsequent step
-(step 3+) MUST NOT launch any task() call until ALL step 1 batches
-have completed (and produced their file or timed out).
-
-Concretely:
-- All `task()` calls in a single step 1 batch go in ONE response.
-- The orchestrator's NEXT response (which may include step 3+ task
-  calls) MUST NOT happen until the step 1 response has returned
-  (which happens automatically — opencode waits for batch task()
-  calls to complete before processing the next orchestrator turn).
-- Do NOT combine step 1 task() calls with step 3+ task() calls in the
-  same response. If the LLM is tempted, split into two responses:
-  response 1 = all step 1 batch task() calls; response 2 (after
-  response 1 returns) = step 3 evaluador task() call.
-
-This guarantees peak concurrency never exceeds `step_1_concurrent_max`
-(typically 3) during step 1, and drops to 1 during every other step.
-
-**Other critical notes:**
 - All `task()` calls of a single batch MUST be in the SAME response,
   with no text between them, so the Task tool runs them in parallel.
 - The response only returns after all batch `task()` complete —
@@ -441,9 +319,9 @@ for batch_idx, batch in enumerate(batches):
       description="Validate proposal {agent}",
       subagent_type="validador",
       prompt="
-        Empirically validate the proposal at $WORKSPACE/out/{id}/iter-{N}/01-{agent}.md
+        Empirically validate the proposal at out/{id}/iter-{N}/01-{agent}.md
 
-        Write your report to $WORKSPACE/out/{id}/iter-{N}/02-validacion-{agent}.md
+        Write your report to out/{id}/iter-{N}/02-validacion-{agent}.md
 
         IMPORTANT: Report viability PER SECTION, not global.
 
@@ -460,13 +338,13 @@ task(
   description="Evaluate all proposals",
   subagent_type="evaluador",
   prompt="
-    Evaluate ALL proposals in $WORKSPACE/out/{id}/iter-{N}/01-propuesta-*.md
+    Evaluate ALL proposals in out/{id}/iter-{N}/01-propuesta-*.md
 
-    Validation reports available in $WORKSPACE/out/{id}/iter-{N}/02-validacion-*.md (if they exist)
+    Validation reports available in out/{id}/iter-{N}/02-validacion-*.md (if they exist)
 
     Adjust AP based on viability scores per section.
 
-    Write consolidated evaluation to $WORKSPACE/out/{id}/iter-{N}/03-calificacion-evaluador.md
+    Write consolidated evaluation to out/{id}/iter-{N}/03-calificacion-evaluador.md
 
     Follow your system prompt instructions.
   "
@@ -496,11 +374,11 @@ task(
     Classify evaluated proposals.
 
     Read:
-    - $WORKSPACE/out/{id}/iter-{N}/03-calificacion-evaluador.md (or the multi-eval consensus)
-    - $WORKSPACE/out/{id}/iter-{N}/01-propuesta-*.md
-    - $WORKSPACE/out/{id}/iter-{N}/02-validacion-*.md (if exist)
+    - out/{id}/iter-{N}/03-calificacion-evaluador.md (or the multi-eval consensus)
+    - out/{id}/iter-{N}/01-propuesta-*.md
+    - out/{id}/iter-{N}/02-validacion-*.md (if exist)
 
-    Write consolidated ranking to $WORKSPACE/out/{id}/iter-{N}/04-clasificacion.md
+    Write consolidated ranking to out/{id}/iter-{N}/04-clasificacion.md
 
     If descalificar_fallida == true (opt-in), disqualify proposals marked ❌ NO VIABLE.
     Otherwise, mark them ⚠️ but keep in ranking with AP reduced.
@@ -550,10 +428,10 @@ task(
     from all 12 originals in this iter.
 
     Read:
-    - $WORKSPACE/out/{id}/iter-{N}/01-propuesta-*.md  (12 originals)
-    - $WORKSPACE/out/{id}/iter-{N}/03-calificacion-evaluador.md (evaluator feedback)
-    - $WORKSPACE/out/{id}/iter-{N}/04-clasificacion.md (current ranking)
-    - $WORKSPACE/out/{id}/iter-{N}/02-validacion-*.md (if exist; per-section viability)
+    - out/{id}/iter-{N}/01-propuesta-*.md  (12 originals)
+    - out/{id}/iter-{N}/03-calificacion-evaluador.md (evaluator feedback)
+    - out/{id}/iter-{N}/04-clasificacion.md (current ranking)
+    - out/{id}/iter-{N}/02-validacion-*.md (if exist; per-section viability)
 
     Process:
     1. Identify the TOP 3 originals by total score and TOP 3 by empirical viability.
@@ -576,7 +454,7 @@ task(
        cross-references 03-calificacion-evaluador.md: which weakness
        in the WINNING original does each design choice address?
 
-    Write to $WORKSPACE/out/{id}/iter-{N}/05-propuesta-integrada.md
+    Write to out/{id}/iter-{N}/05-propuesta-integrada.md
   "
 )
 ```
@@ -589,13 +467,13 @@ task(
   description="Improve proposal {agent}",
   subagent_type=agent,
   prompt="
-    Improve the proposal at $WORKSPACE/out/{id}/iter-{N}/01-{agent}.md
+    Improve the proposal at out/{id}/iter-{N}/01-{agent}.md
     using feedback from:
-    - $WORKSPACE/out/{id}/iter-{N}/03-calificacion-evaluador.md
-    - $WORKSPACE/out/{id}/iter-{N}/04-clasificacion.md
-    - $WORKSPACE/out/{id}/iter-{N}/02-validacion-{agent}.md (if exists)
+    - out/{id}/iter-{N}/03-calificacion-evaluador.md
+    - out/{id}/iter-{N}/04-clasificacion.md
+    - out/{id}/iter-{N}/02-validacion-{agent}.md (if exists)
 
-    Write improved proposal to $WORKSPACE/out/{id}/iter-{N}/05-mejorada-{agent}.md
+    Write improved proposal to out/{id}/iter-{N}/05-mejorada-{agent}.md
 
     Follow your system prompt instructions in 'improvement' mode.
   "
@@ -614,15 +492,15 @@ ALONGSIDE the originals in the step 8 ranking.
 
 Step 6 (if validacion_empirica == true): validate candidates
 - If step_5_modo = sintesis_central: validate the integrada →
-  `$WORKSPACE/out/{id}/iter-{N}/06-validacion-integrada.md`
+  `out/{id}/iter-{N}/06-validacion-integrada.md`
 - If step_5_modo = self_improve or skip: validate each candidate individually
-  → `$WORKSPACE/out/{id}/iter-{N}/06-validacion-{candidate}.md`
+  → `out/{id}/iter-{N}/06-validacion-{candidate}.md`
 
 Step 7: re-evaluate candidates (single-eval default, multi-eval opt-in same as step 3)
-→ `$WORKSPACE/out/{id}/iter-{N}/07-calificacion-final.md`
+→ `out/{id}/iter-{N}/07-calificacion-final.md`
 
 Step 8: select winner from all candidates (originals + integrada and/or mejoradas)
-→ `$WORKSPACE/out/{id}/iter-{N}/08-ganador.md`
+→ `out/{id}/iter-{N}/08-ganador.md`
 
 ## Step 9 — Summary
 
@@ -649,9 +527,9 @@ task(
     strongest elements across ALL iterations.
 
     Read:
-    - $WORKSPACE/out/{id}/iter-*/08-ganador.md (one per iter)
-    - $WORKSPACE/out/{id}/iter-*/09-sumario.md (one per iter)
-    - $WORKSPACE/out/{id}/iter-*/05-*.md (the mejora/integrada files)
+    - out/{id}/iter-*/08-ganador.md (one per iter)
+    - out/{id}/iter-*/09-sumario.md (one per iter)
+    - out/{id}/iter-*/05-*.md (the mejora/integrada files)
 
     Output:
     - out/{id}/10-sintesis-cross-iter.md
@@ -677,9 +555,9 @@ task(
 If the command was `/orquestar-iterate`, after step 9 (and step 10 if
 sintesis_final):
 ```
-1. Read $WORKSPACE/out/{id}/iter-{N}/09-sumario.md → score_actual
+1. Read out/{id}/iter-{N}/09-sumario.md → score_actual
 2. If N == 1: prev_score = 0, jump to step 1 (continue always for first iter)
-3. Read $WORKSPACE/out/{id}/iter-{N-1}/09-sumario.md → prev_score
+3. Read out/{id}/iter-{N-1}/09-sumario.md → prev_score
 4. Calculate: mejora = score_actual - prev_score
 5. Read umbral_convergencia from merged config
 6. Read max_iteraciones from merged config
@@ -716,7 +594,7 @@ Before each step, write in your response:
 
 After each step:
 ```
-[STEP 1 ✓] N proposals generated in $WORKSPACE/out/{id}/iter-{N}/
+[STEP 1 ✓] N proposals generated in out/{id}/iter-{N}/
 ```
 
 ## Errors and recovery

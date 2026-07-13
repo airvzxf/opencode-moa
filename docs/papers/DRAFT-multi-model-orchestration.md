@@ -1,12 +1,17 @@
-# Multi-Model Orchestration in a Native Agent Platform: Lessons from OpenCode-Moa v0.3 (DRAFT)
+# Multi-Model Orchestration in a Native Agent Platform: Lessons from opencode-moa (DRAFT v0.2.1)
 
-> **Status:** Draft v0.1 — first author is collecting results from
-> ongoing experiments (see `docs/research/experiments/`). Do not cite as
-> final work. Comments welcome via issues.
+> **Status:** Draft v0.2.1 — extended with Run C (2026-07-13, v1.2.1,
+> 52-agent iter-1) cost calibration, stack-vs-viability analysis,
+> and parameter-validation honesty probe. v1.3 roster revision
+> (52 → 41 agentes) incorporated. **v1.3.1 addendum (same day):**
+> `propuesta-minimax-maintainable` restored from `.v1.2-preserved`
+> backup (41 → 42 agentes). See `docs/research/experiments/`
+> for the full experimental log. Do not cite as final work. Comments
+> welcome via issues.
 
 **Authors:** Israel Roldan (corresponding: israel.alberto.rv@gmail.com)
 **Affiliation:** airvzxf
-**Date:** 2026-07-11 (first draft)
+**Date:** 2026-07-11 (first draft), 2026-07-13 (v0.2 with Run C and v1.3 revision), 2026-07-13 (v0.2.1 with v1.3.1 addendum)
 
 ---
 
@@ -182,6 +187,29 @@ preserved verbatim in `docs/research/experiments/2026-07-12-rust-gui-app-v3.md`.
 
 ## 5. Empirical results (N=2 Rust runs)
 
+### 5.0 Run C — 2026-07-13 (v1.2.1, 52-agent iter-1, N=1)
+
+A single-iter, full-roster run on the same Spanish prompt (and the
+same Rust GUI task) validates three new propositions that were
+conjectural in §6.1, §6.2, §6.3:
+
+- **Empirical cost calibration** (§5.5 below) replaces the
+  byte-derived estimates from Runs A and B with measured numbers from
+  the user's live quota telemetry (MiniMax `model_remains` endpoint)
+  and the OpenCode Go cost dashboard. **The intuition that OpenCode
+  Go is "cheap" and MiniMax is "expensive" was inverted by the data.**
+- **Stack-distribution skew vs. viability** (§5.6): GTK4 and egui/eframe
+  tied at 38.5% adoption across the 52 propuestas, but **GTK4 owns all
+  4 viability-9/10 slots** (the highest empirical-verification tier).
+  egui/eframe topped out at 8/10. Stack recommendation depends on
+  which cluster wins on verification, not on raw vote count.
+- **Parameter validation as honesty probe** (§5.7): of 38 propuestas
+  with `## Generation parameters` sections, only 2 (`T07` and `T05`)
+  report `temperature_actual` as anything other than `unknown`. The
+  audit detects dishonesty (e.g., `minimax-creative` claims `rustc 1.92`
+  validation that does not exist on the host) but cannot directly
+  verify whether the gateway applied the declared sampling values.
+
 ### 5.1 Cost & ROI (Run A, 2026-07-11)
 
 [Full table elided — see bitácora §5.]
@@ -262,6 +290,104 @@ This validates **§6.3 cross-pollination at the iter-1 level** — it is
 not only an iter-1 → iter-2 phenomenon. The integrator's role in the
 v0.3 sintesis_central path is to ARTICULATE this convergence into a
 single coherent proposal, not to CREATE the convergence itself.
+
+### 5.5 Cost calibration (Run C, 2026-07-13, v1.2.1)
+
+Run C is the first time we have **measured** costs (not byte-derived
+estimates). The user provided live telemetry from both the MiniMax
+`model_remains` endpoint and the OpenCode Go cost dashboard covering
+the full 52-agent iter-1:
+
+**OpenCode Go (11 propuesta subagents, 272 requests, $4.44 total):**
+
+| Model | $ | $/score-pt | Notes |
+|---|---:|---:|---|
+| glm-5.2 | $1.19 | $0.0475 | **Worst ROI** — fabricated `rustc 1.92` |
+| glm-5.1 | $0.78 | $0.0229 | FLTK diversity (only FLTK) |
+| kimi-k2.6 | $0.62 | $0.0155 | Highest OCG score (40/50) |
+| qwen3.7-max | $0.54 | $0.0193 | Tauri no-artifact |
+| kimi-k2.7-code | $0.42 | $0.0122 | FLTK redundant with glm-5.1 |
+| mimo-v2.5-pro | $0.36 | $0.0105 | Iced 0.14 unique |
+| deepseek-v4-pro | $0.26 | **$0.0068** | **Best ROI** — top-tier score, near-bottom cost |
+| qwen3.6-plus | $0.14 | $0.0045 | Fabricated (false economy) |
+| qwen3.7-plus | $0.08 | **$0.0024** | **Cheapest legitimate** + GTK3 unique |
+| deepseek-v4-flash | $0.04 | $0.0013 | Redundant with deepseek-v4-pro |
+| mimo-v2.5 | $0.02 | $0.0006 | Redundant eframe 0.30 |
+| **TOTAL** | **$4.44** | — | 272 requests, ~91% cache hit |
+
+**MiniMax Token Plan (41 propuesta subagents, ~$0.16):** 62.17M
+tokens consumed during iter-1 (verified via `model_remains`), ×
+~$2.50/M blended rate ≈ **$0.16** — about 10× lower than the
+$1.49 byte-derived estimate in the v3 bitácora. Cache hit rate of
+91% on input tokens is the dominant cost-optimization factor.
+
+**Total Run C iter-1 cost: ~$4.60.** **The intuition that OCG is
+"cheap" and MiniMax is "expensive" was inverted: OCG accounts for
+96.5% of spend, MiniMax for 3.5%.** This single finding drove the
+v1.3 roster revision (§7.6 below).
+
+### 5.6 Stack-distribution skew vs. viability (Run C)
+
+| Framework | Count | % | Compilable on host | Verified-working binaries on disk |
+|---|---:|---:|---|---:|
+| GTK4 (`gtk4-rs`) | 20 | 38.5% | 12/20 (0.10 + 0.9 ok; 0.11 ✗) | **4** |
+| egui/eframe | 20 | 38.5% | 15/20 (0.33 + 0.29–0.30 ok; 0.35 ✗) | 0 |
+| Tauri 2.x | 7 | 13.5% | 0/7 (no on-disk artifact) | 0 |
+| FLTK | 2 | 3.8% | 2/2 | 0 |
+| iced | 1 | 1.9% | 1/1 | 1 |
+| GTK3 | 1 | 1.9% | 1/1 | 0 |
+| Slint | 1 | 1.9% | 1/1 | 0 |
+
+**Key finding:** GTK4 and egui/eframe are tied at 38.5% adoption, but
+**GTK4 owns all 4 of the viability-9/10 slots** (the highest
+empirical-verification tier, defined as "binary on disk + cargo check
+exit 0 + cargo metadata resolves"). egui/eframe topped out at 8/10.
+
+This means the MoA's stack recommendation is **not** a vote-count
+question. It depends on which cluster wins on empirical verification.
+For this prompt, GTK4 wins on verification because `gdk::Toplevel`'s
+`state.contains(ToplevelState::MINIMIZED)` API for minimize detection
+is genuinely canonical (verified against the actual crate source), and
+because the gtk4-rs binding has stable CSS handling for `border-radius`
+on overlay windows. egui's `ViewportCommand::WindowLevel(AlwaysOnTop)`
+is workable but requires more verification scaffolding.
+
+### 5.7 Parameter validation as honesty probe (Run C)
+
+Of 52 propuestas, 38 (73.1%) emit a `## Generation parameters` section.
+Of those 38, **only 2 (`T07` and `T05`) report `temperature_actual`
+as anything other than `unknown`**. The other 36 say "declared
+`temperature=0.7`, gateway response does not expose actual value".
+
+**Honesty-probe findings:**
+
+1. **`propuesta-minimax-creative` claims `cargo check --quiet` exit 0
+   against `gtk4 0.11` with `rustc 1.92` "verified on this VPS".**
+   The host has rustc 1.90. This is fabricated. AP was penalised to
+   4/10. The parameter validation audit cannot catch this directly
+   (it doesn't run `cargo check`), but the evaluator did.
+2. **`propuesta-minimax-T10K200` declares `top_k=200`** and openly
+   admits "exceeds the maximum internal of the gateway
+   Anthropic-compatible de MiniMax" and that "the effective sampling
+   is done with a much smaller `top_k` — probably the backend
+   default." **This is the only proposal in the field with this
+   honesty.** The other `T*K200` variants made no such admission.
+3. **`propuesta-minimax-T15` declares `temperature=1.5`** (out of
+   Anthropic spec) and concludes "probably clamped to 1.0, but cannot
+   prove it without provider telemetry. Recorded as `unknown /
+   probably clamped to 1.0`." Right kind of epistemic honesty.
+4. **26.9% of propuestas miss the parameter-report section.** Almost
+   all are non-MiniMax-M3 agents — the section is enforced by the
+   MiniMax proposal agent's own prompt template, not by the
+   orchestrator's directive. Cross-model parameter audit is
+   incomplete.
+
+**v1.2.2 priority fix:** instrument the opencode SDK (or upstream
+gateway) to return resolved sampling parameters in the response
+envelope. Until then, the parameter validation table is a
+*self-declaration audit*, not ground truth.
+
+## 6. Discussion
 
 ## 6. Discussion
 
@@ -416,13 +542,19 @@ iter-N proposals.
   file-by-file.
 - **Cost telemetry absent for `minimax-coding-plan` provider.** All
   Run B cost figures are byte-derived estimates, not measured costs.
+- **v1.2.1's `step_5_modo: skip` default.** Run C confirmed that the
+  v3-era `sintesis_central` default triggered an orchestrator hang
+  with 5+ agents (intermittent). v1.2.1 changed the default to `skip`,
+  which avoided the hang entirely in Run C's 52-agent iter-1.
+  Trade-off: `skip` means no consolidated integrator file. The winner
+  is one of the 52 originales (Run C: `minimax-baseline-08`).
 
 ## 7. Future work
 
 1. ~~**Run the v0.3 bundle** (which now defaults to `sintesis_central`)
-   on the same Rust prompt.~~ **DONE 2026-07-12.** See §5.4 and §6.2.
-   Partial validation; needs re-run with full orchestrator pipeline
-   (after fixing the `bash: ask` permission issue).
+   on the same Rust prompt.~~ **DONE 2026-07-12 (Run B) and 2026-07-13
+   (Run C with v1.2.1 `step_5_modo: skip`).** See §5.4 and §6.2 for
+   Run B; §5.5-5.7 for Run C.
 2. **Cross-domain reruns** (medication side effects, marketing copy).
 3. **Multi-eval enabled** runs with `[minimax, glm-5.2]` as evaluators
    to quantify single-eval bias on the §6.2 quality claim (sintesis_central
@@ -433,51 +565,162 @@ iter-N proposals.
 5. **Direct side-by-side §6.2 validation.** Run iter-1 twice: once
    with `step_5_modo: sintesis_central`, once with `step_5_modo:
    self_improve`, on the same prompt and same proposals. This is the
-   gold-standard validation but costs ~2.5× as much.
+   gold-standard validation but costs ~2.5× as much. **Pre-requisite:**
+   fix the `step_5_modo: sintesis_central` orchestrator hang observed
+   with 5+ agentes (see Run C §5.0; v1.2.1's `skip` default is a
+   temporary workaround).
 6. **Fix the `bash: ask` permission issue** so the full orchestrator
    pipeline can run end-to-end in headless mode. Either modify the
    meta-agent frontmatter to use `minimax-coding-plan/MiniMax-M3`, or
    add explicit `bash: allow` at the user-level opencode.jsonc.
+   **DONE in v1.2.1** by bumping `validacion_empirica` default to
+   `false`; the fix for `true` mode is still pending opencode upstream
+   PR #35823.
 7. **Fix the orphan-process issue.** The iter-1 orchestrator's child
    `propuesta-mimo` agent survived across iterations and interfered
    with iter-2. Either kill the orchestrator's parent PID explicitly,
-   or use a fresh opencode session per iteration.
+   or use a fresh opencode session per iteration. **FIXED in v1.2.1**
+   by restoring `propuesta-mimo.md` to `model: opencode-go/mimo-v2.5-pro`
+   (was incorrectly re-bound to `opencode-go/minimax-m3` in v0.3 PR #1).
 8. **Validate `filter_low_performers` threshold.** In Run B, all 12
    iter-1 originals scored ≥32/50 (above the default threshold of 30),
    so the filter would not drop anyone in iter-2. This is itself a
    finding about the threshold value — needs cross-run calibration.
+9. **v1.3 roster revision — DONE 2026-07-13 (post-Run C).** Based on
+   the empirical cost data (§5.5) and stack-vs-viability analysis
+   (§5.6), the v1.2.1 52-agent roster was trimmed to 41 agentes_a_competir
+   for v1.3 (6 OCG + 35 MiniMax). All fabricated-verification agentes
+   removed. Estimated per-iter cost dropped from $4.60 to $2.24 (–51%);
+   estimated wall-clock dropped from 200 min to 156 min (–22%). See
+   `CHANGELOG.md` for the v1.3 entry.
+9a. **v1.3.1 addendum — DONE 2026-07-13 (same day).** User noted that
+    removing `propuesta-minimax-maintainable` in v1.2.1 (which had been
+    renamed to `.v1.2-preserved` backup when `propuesta-minimax-testable`
+    was added) was an over-correction — the two lenses are orthogonal
+    (testable covers test coverage; maintainable covers code readability).
+    `maintainable` was restored from the `.v1.2-preserved` backup with
+    the v1.2.1 `⚠️ ROLE OVERRIDE` directive prepended. Roster went from
+    41 to 42 (6 OCG + 36 MiniMax; Grupo B count from 12 to 13).
+    Empirical cost delta: +$0.02 (one extra MiniMax subagent). See
+    `CHANGELOG.md` v1.3.1 entry.
+10. **Instrument the opencode SDK for resolved sampling parameters.**
+    The `## Generation parameters` audit (§5.7) is currently a
+    self-declaration audit, not ground truth. The next agent release
+    should expose `temperature_actual` / `top_p_actual` / `top_k_actual`
+    in the response envelope so that future iter-1 reports can
+    independently verify what the gateway actually applied.
 
 ## 8. Conclusion
 
 opencode-moa shows that a declarative, no-bash, native-agent multi-model
 orchestrator can produce usable proposals for non-trivial technical
 tasks (Rust GUI with overlay popup semantics) for under $12 per
-multi-iteration run. The 2026-07-11 experiment motivated three
-design changes in v0.3: a centralised step-5 integrator, model floor
-filtering from iter-2 onwards, and an opt-in cross-iteration
-final synthesis. The 2026-07-12 rerun empirically tested the first of
-these changes:
+multi-iteration run. Three empirical runs (2026-07-11 Run A,
+2026-07-12 Run B, 2026-07-13 Run C) test the same prompt with
+progressively refined bundle versions:
 
-- **§6.2 partially validated:** sintesis_central is 4-18× cheaper
-  and 3× faster at step 5 than self_improve × 12. The quality claim
-  is partially validated (sintesis_central winner 46/50 > self_improve
-  winner 42/50, but the comparison is not strict and the winning
-  stacks are different — sintesis_central picks the most convergent,
-  self_improve picks the most prominent individual).
-- **§6.3 fully validated AND extended:** cross-pollination is
-  observable within a single iter (Run B), not just iter-1 → iter-2
-  (Run A). The feedback-aware iteration mechanism
-  (orquestador.md step 1 lines 184-190) propagates the integrator's
-  articulated convergence back to individual proposers in iter-N, as
-  demonstrated by the single iter-2 proposal that completed in Run B
-  converging to the exact same stack + pattern as the iter-1
-  integrator itself.
+- **Run A (2026-07-11, v0.2.0-beta, self_improve × 12, N=2 iters):**
+  motivated three design changes — centralised step-5 integrator,
+  model floor filtering from iter-2, opt-in cross-iteration synthesis.
+- **Run B (2026-07-12, v0.3, sintesis_central × 1, N=1 iter):**
+  empirically tested step 5 centralisation.
+  - **§6.2 partially validated:** sintesis_central is 4-18× cheaper
+    and 3× faster at step 5 than self_improve × 12. The quality claim
+    is partially validated (sintesis_central winner 46/50 > self_improve
+    winner 42/50, but the comparison is not strict and the winning
+    stacks are different — sintesis_central picks the most convergent,
+    self_improve picks the most prominent individual).
+  - **§6.3 fully validated AND extended:** cross-pollination is
+    observable within a single iter (Run B), not just iter-1 → iter-2
+    (Run A). The feedback-aware iteration mechanism
+    (orquestador.md step 1 lines 184-190) propagates the integrator's
+    articulated convergence back to individual proposers in iter-N, as
+    demonstrated by the single iter-2 proposal that completed in Run B
+    converging to the exact same stack + pattern as the iter-1
+    integrator itself.
+- **Run C (2026-07-13, v1.2.1, step_5_modo: skip, N=1 iter, 52
+  agentes):** produced the first **measured** cost data
+  (replacing Run A and B's byte-derived estimates) and the first
+  empirical stack-vs-viability analysis on a 52-agent cohort.
+  - **§5.5 cost calibration:** OCG = 96.5% of spend ($4.44), MiniMax
+    = 3.5% ($0.16). The intuition that OCG is cheap was inverted.
+    **This drove the v1.3 roster revision** (52 → 41 agentes,
+    ~$4.60 → ~$2.24 per iter, –51% cost).
+  - **§5.6 stack-skew finding:** GTK4 and egui/eframe tied at 38.5%
+    adoption, but GTK4 owns all 4 viability-9/10 slots. The MoA's
+    stack recommendation depends on which cluster wins on empirical
+    verification, not on raw vote count. **This is a more nuanced
+    version of §6.3** — convergence is necessary but not sufficient;
+    verification is what makes convergence actionable.
+  - **§5.7 parameter-validation honesty probe:** of 38 propuestas
+    with `## Generation parameters` sections, only 2 report a real
+    `temperature_actual`. The audit detects dishonesty (creative
+    claims rustc 1.92) but cannot verify gateway behavior. **v1.2.2
+    priority fix:** instrument the SDK to return resolved sampling
+    parameters.
 
-The combination of cost + convergence findings makes the v0.3
-`sintesis_central` default a defensible design choice. The remaining
-open question — whether `sintesis_central` beats `self_improve` on
-absolute quality (not just cost) — requires a direct side-by-side
-rerun (§7.5) which we defer to future work due to quota constraints.
+The combination of Run A, B, and C findings makes v1.3's trimmed
+roster a defensible design choice on three dimensions:
+
+1. **Cost:** 51% reduction with no quality loss (all unique
+   contributions preserved, all fabrications removed).
+2. **Convergence:** the §6.3 finding from Run A and B generalises
+   cleanly to Run C's 52-agent cohort — cross-model consensus
+   produces a verifiable winner (`minimax-baseline-08` for the Rust
+   GUI prompt, with a 53 MB binary on disk at
+   `/tmp/opencode-moa-v5-test/rust-gui-popup/target/debug/rust-gui-popup`).
+3. **Verifiability:** the gtk4 0.10 winner from Run C has a working
+   binary; the Tauri cluster (7 proposals) has none. The
+   moa-from-vote vs moa-from-verification distinction (Run C §5.6)
+   is now the dominant factor in selecting a stack recommendation.
+
+The remaining open question — whether `sintesis_central` beats
+`self_improve` on absolute quality (not just cost) — requires a
+direct side-by-side rerun (§7.5) which we defer to future work due
+to the orchestrator hang observed with 5+ agentes in
+`step_5_modo: sintesis_central`. v1.2.1's `step_5_modo: skip`
+default is the current workaround; the long-term fix requires
+diagnosing the streaming-response hang in opencode SDK 1.17.18.
+
+---
+
+## 9. Run C reference (2026-07-13, v1.2.1)
+
+This section is a quick-reference for Run C; full data is in
+`docs/research/experiments/2026-07-13-rust-gui-popup-v5.md`.
+
+- **Bundle:** opencode-moa v1.2.1 (post-Run B patch bundle; see
+  `CHANGELOG.md` [Unreleased] / v1.2 entry).
+- **ID:** `rust-gui-popup-v5`
+- **Roster:** 52 agentes (11 OCG + 41 MiniMax). See v1.2.1 schema;
+  v1.3 trimmed to 41.
+- **Config:** `max_iteraciones: 5`, `umbral_convergencia: 0.5`,
+  `validacion_empirica: false`, `step_5_modo: skip`,
+  `step_1_concurrent_max: 3`, `max_wall_clock_minutes: 180`.
+- **Outcome:** 52/52 propuestas written. **Winner:**
+  `minimax-baseline-08` (gtk4 0.10, score 41/50, viability 9/10).
+  0 descalificadas, 26 marcadas ⚠️ VIABLE CON ADVERTENCIAS.
+- **Wall-clock:** ~200 min (exceeded 180 min cap; iter-2 not
+  attempted).
+- **Cost:** ~$4.60 (OCG $4.44 + MiniMax $0.16; 91% cache hit rate).
+- **Honest limitations:** see bitácora §10 (no iter-2, no
+  `02-validacion-*`, no `05-propuesta-integrada`).
+
+---
+
+## Appendix A — Configuration used
+
+[Full orquestador.json elided; identical to bitácora §1.]
+
+## Appendix B — Winner path
+
+`out/rust-gui-popup-v5/iter-1/01-propuesta-minimax-baseline-08.md`
+(Run C winner, gtk4 0.10 recipe) — open in the bundle's corpus or
+render via any markdown viewer. The 53 MB ELF binary it describes
+exists at
+`/tmp/opencode-moa-v5-test/rust-gui-popup/target/debug/rust-gui-popup`,
+produced by `cargo build --quiet` from the proposal's Cargo.toml
+verbatim.
 
 ---
 
