@@ -72,7 +72,7 @@ Process:
 3. For each, list the unique technical contribution that the evaluador highlighted (e.g. "multi-viewport API for the popup", "cargo-free binary static artifact", "accesskit integration"). Use the EXACT phrasing from the originals where possible
 4. Detect CONVERGENT ideas — ideas that 3+ originals mentioned independently. These are validated by the diversity of the models and should be retained verbatim
 5. Detect CONFLICTING choices — proposals that picked different crates, architectures, or APIs. For each, evaluate against the evaluador's signal and pick the one with stronger evidence (commands that compile, higher viability, wider feature coverage)
-6. Write ONE self-contained proposal in the same format as the originals (Tech stack, Architecture, Installation commands, Considerations, Effort, References). 200-400 lines.
+6. Write ONE self-contained proposal in the same format as the originals (Tech stack, Architecture, Installation commands, Considerations, Effort, References). Preserve all detail required by the project's scope; do not shorten or pad the synthesis to meet an arbitrary line count.
 7. Add a `## Source attribution` section at the bottom listing which original(s) each section draws from. Use `propuesta-{modelo_id}.md` (e.g. `propuesta-minimax.md`) as the citation key, with line ranges when possible
 8. Add a `## Why this beats the field` section that cross-references 03-calificacion-evaluador.md. List which weakness in the WINNING original does each design choice address, and which weakness of the runner-ups does each choice AVOID
 9. DO NOT introduce ideas that NO original proposed. The integrator's role is convergence + curation, not invention

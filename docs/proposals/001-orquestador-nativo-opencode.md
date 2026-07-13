@@ -822,6 +822,7 @@ Your job:
 - **Concrete commands**: each proposal must include exact shell commands that the validator can execute.
 - **Honest**: if you don't know something, say so. Don't invent APIs.
 - **Traceable**: each technical decision must have justification.
+- **Scope-driven depth**: let the proposal length follow the project's scope and complexity. Do not shorten, pad, or restructure it to meet an arbitrary line count.
 
 # Anti-hallucination
 
@@ -871,7 +872,7 @@ npm install ...
 - [URL 2](https://...)
 ```
 
-Minimum 50 lines, maximum 500.
+
 ```
 
 **`agents/propuesta-kimi.md`** and **`agents/propuesta-mimo.md`**: identical except `model: opencode-go/kimi-k2.6` and `model: opencode-go/minimax-m3:thinking` respectively.
@@ -939,6 +940,7 @@ If `descalificar_fallida == true` AND global viability < 3/10: mark as DESCALIFI
 
 - **Do not inflate scores**. Be strict. Your temperature is 0.0.
 - **Evaluate ALL proposals**, even the one you generated in another step (if applicable).
+- **Length-neutral**: never reward or penalize a proposal for its line count. Judge whether its detail is appropriate to the project's scope and requirements.
 - **Cite evidence**: each score must have 1-2 phrases from the proposal text that justify it.
 
 # Output format
@@ -986,7 +988,7 @@ If `descalificar_fallida == true` AND global viability < 3/10: mark as DESCALIFI
 [If there are very similar proposals, mention it]
 ```
 
-Minimum 80 lines.
+
 ```
 
 ### 8.4 `agents/sintetizador.md` (single-model)
@@ -1265,7 +1267,7 @@ You receive a prompt with:
 [Summary of empirical viability state, with global score and critical sections]
 ```
 
-Minimum 30 lines, 6 mandatory sections.
+All six sections are mandatory. Report every relevant finding regardless of output length; never use line count as a completeness criterion.
 
 # Principles
 
@@ -1801,24 +1803,12 @@ If the user runs `/orquestar "..." auth-jwt` and `out/auth-jwt/iter-1/` already 
 
 - The orchestrator uses `glob` to see which files exist.
 - For each step, verifies if expected outputs already exist.
-- If they exist and are "complete" (more than X lines), **skips that step**.
+- If they exist and are complete (contain the expected structure and substantive content), **skips that step**.
 - If they exist but are empty or partial, **regenerates them**.
 
 ### 15.2 Criterio de "completitud"
 
-| File | Minimum lines |
-|---|---|
-| `01-propuesta-*.md` | 50 |
-| `02-validacion-*.md` | 30 |
-| `03-calificacion-evaluador.md` | 80 |
-| `04-clasificacion.md` | 20 |
-| `05-mejorada-*.md` | 50 |
-| `06-validacion-mejorada-*.md` | 30 |
-| `07-calificacion-final.md` | 80 |
-| `08-ganador.md` | 15 |
-| `09-sumario.md` | 10 |
-
-If a file exists but has fewer lines than the minimum, it is regenerated with FORCE.
+An output is complete when it is non-empty, valid Markdown, and contains the sections required by the producing agent's output format. Completeness is content-based; file length is never used as a proxy. If expected sections are missing or the output is empty or partial, it is regenerated with FORCE.
 
 ### 15.3 Forzar re-ejecución
 

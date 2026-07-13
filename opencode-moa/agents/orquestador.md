@@ -321,7 +321,9 @@ for ((batch_idx=0; batch_idx<NUM_BATCHES; batch_idx++)); do
             describe what the GUI would look like in the proposal.
           - Aim for 12-18 internal tool calls (webfetch, bash, glob, read)
             before writing the proposal file. Hard cap: 18 calls.
-        Goal: 60-180 seconds wall time per proposal. Final file 50-500 lines.
+        Goal: 60-180 seconds wall time per proposal. Let the proposal's
+        length follow the project's scope and complexity; do not target or
+        enforce an arbitrary line count.
 
         === FEEDBACK-AWARE ITERATION ===
         If N > 1, the following may already exist as iteration-1 artefacts:
@@ -569,7 +571,7 @@ task(
        better viability, wider feature coverage).
     5. Write ONE self-contained proposal in the same format as the
        originals (Tech stack, Architecture, Installation commands,
-       Considerations, Effort, References). 200-400 lines. Mark with a
+       Considerations, Effort, References). Mark with a
        '## Source attribution' section listing which original(s) each
        section draws from.
     6. End with a '## Why this beats the field' section that

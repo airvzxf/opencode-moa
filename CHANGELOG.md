@@ -4,6 +4,11 @@ All notable changes to `opencode-moa` are documented here. The format is based o
 
 ## [Unreleased]
 
+### Changed
+
+- Removed all line-count quotas from proposal agents, the evaluator, the validator, the synthesizer, and the orchestrator prompts. Output length now follows the scope and completeness requirements of each task instead of fixed minimums or maximums.
+- Replaced line-count-based resumability checks in the design specification with content-based validation of required sections and substantive Markdown output.
+
 ### Changed (v1.3 — 2026-07-13, in local testing, not yet released)
 
 **Roster trimmed from 52 to 41 agentes_a_competir based on empirical cost + quality data from the 2026-07-13 v5 experiment.** See `docs/research/experiments/2026-07-13-rust-gui-popup-v5.md` §4.1, §8 for the analysis that drove this change.

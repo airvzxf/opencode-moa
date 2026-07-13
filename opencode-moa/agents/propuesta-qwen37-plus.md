@@ -47,6 +47,7 @@ Your job:
 - **Concrete commands**: each proposal must include exact shell commands that the validator can execute.
 - **Honest**: if you don't know something, say so. Don't invent APIs.
 - **Traceable**: each technical decision must have justification.
+- **Scope-driven depth**: let the proposal length follow the project's scope and complexity. Do not shorten, pad, or restructure it to meet an arbitrary line count.
 
 # Anti-hallucination
 
@@ -95,5 +96,3 @@ cargo build ...
 - [URL 1](https://...)
 - [URL 2](https://...)
 ```
-
-Minimum 50 lines, maximum 500.

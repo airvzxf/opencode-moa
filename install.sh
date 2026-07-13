@@ -34,13 +34,15 @@ mkdir -p "$CONFIG_DIR/commands"
 
 # Copy agents
 echo "Copying agents..."
-cp "$BUNDLE_DIR/agents/"*.md "$CONFIG_DIR/agents/"
-echo "  ✓ $(ls "$BUNDLE_DIR/agents/"*.md | wc -l) agent files"
+AGENT_FILES=("$BUNDLE_DIR/agents/"*.md)
+cp "${AGENT_FILES[@]}" "$CONFIG_DIR/agents/"
+echo "  ✓ ${#AGENT_FILES[@]} agent files"
 
 # Copy commands
 echo "Copying commands..."
-cp "$BUNDLE_DIR/commands/"*.md "$CONFIG_DIR/commands/"
-echo "  ✓ $(ls "$BUNDLE_DIR/commands/"*.md | wc -l) command files"
+COMMAND_FILES=("$BUNDLE_DIR/commands/"*.md)
+cp "${COMMAND_FILES[@]}" "$CONFIG_DIR/commands/"
+echo "  ✓ ${#COMMAND_FILES[@]} command files"
 
 # Copy config (don't overwrite if exists)
 if [[ -f "$CONFIG_DIR/orquestador.json" ]]; then
@@ -63,7 +65,7 @@ echo
 echo "=== Installation complete ==="
 echo
 echo "Next steps:"
-echo "  1. Verify: ls $CONFIG_DIR/agents/  (should show 7 files)"
+echo "  1. Verify: ls $CONFIG_DIR/agents/  (should show ${#AGENT_FILES[@]} files)"
 echo "  2. Open OpenCode in any project: opencode"
 echo "  3. Run smoke test: /orquestar --smoke-test=true \"test\" smoke"
 echo
