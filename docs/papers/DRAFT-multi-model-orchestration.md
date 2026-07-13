@@ -40,9 +40,9 @@ defensible) winning stack choice driven by cross-model convergence. We
 identify cost-per-value outliers (deepseek-v4-flash and mimo-v2.5 deliver
 top-5 quality at under $0.06 cumulative spend each), validate the §6.3
 cross-pollination phenomenon at the iter-1 level (not just iter-1 → iter-2),
-and present design recommendations for the operational envelope (model
-floor, filter_low_performers, step_5_modo ∈ {sintesis_central, self_improve,
-skip}).
+and present design recommendations for the operational envelope (full-roster
+retention, configurable parallel batch size, step_5_modo ∈
+{sintesis_central, self_improve, skip}).
 
 ## 1. Introduction
 
@@ -143,13 +143,14 @@ In `/orquestar-iterate`, step 9 triggers a convergence check:
 `mejora >= umbral_convergencia` AND `N < max_iteraciones`, continue to
 `iter-N+1`. Otherwise stop.
 
-### 3.3 Selective participation
+### 3.3 Full-roster participation
 
-`filter_low_performers` (v0.3 NEW) prevents dwindling cohorts:
-from `iter-2` onwards, models whose `iter-N-1` total score was below
-`descalificar_debajo_de` are dropped. If fewer than `keep_minimo`
-survive, the top `keep_minimo` are kept. This preserves diversity
-without binding every iteration to the slowest subagent.
+Every configured proposal agent remains active across iterations. Aggregate
+score is not used as a pruning threshold: specialized agents can contribute
+a unique accessibility, security, testability, portability, or operational
+insight even when their overall score is not competitive. Runtime control
+comes from configurable parallel batches and iteration convergence rather
+than deleting minority approaches from later rounds.
 
 ## 4. Method
 
@@ -582,10 +583,10 @@ iter-N proposals.
    or use a fresh opencode session per iteration. **FIXED in v1.2.1**
    by restoring `propuesta-mimo.md` to `model: opencode-go/mimo-v2.5-pro`
    (was incorrectly re-bound to `opencode-go/minimax-m3` in v0.3 PR #1).
-8. **Validate `filter_low_performers` threshold.** In Run B, all 12
-   iter-1 originals scored ≥32/50 (above the default threshold of 30),
-   so the filter would not drop anyone in iter-2. This is itself a
-   finding about the threshold value — needs cross-run calibration.
+8. **Retain the full proposal roster across iterations.** Aggregate-score
+   filtering was removed because it can discard the only agent covering a
+   specialized quality axis. Future experiments should measure contribution
+   propagation by axis instead of using a single total-score cutoff.
 9. **v1.3 roster revision — DONE 2026-07-13 (post-Run C).** Based on
    the empirical cost data (§5.5) and stack-vs-viability analysis
    (§5.6), the v1.2.1 52-agent roster was trimmed to 41 agentes_a_competir

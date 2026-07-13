@@ -59,15 +59,9 @@ You are the orchestrator of a multi-model competition. Your job is to coordinate
       - sintesis_final_modelo (string) [NEW v1.1] — default = modelo_objetivo
       - multi_eval (bool) [NEW v1.1] — default false (single-eval remains default)
       - multi_eval_modelos (array<string>) [NEW v1.1] — empty by default
-      - max_wall_clock_minutes (int) [NEW v1.1] — default 90 (was 0=unlimited in v1.1; 90 covers worst-case 40-agent iter)
-      - filter_low_performers (object) [NEW v1.1] — see schema below
+      - max_wall_clock_minutes (int) [NEW v1.1] — default 0 (unlimited; positive values opt into a global time limit)
       - if_mejoras_tecnicamente_similares_a_otras (bool) [NEW v1.1] — default false
       - param_validation_report (bool) [NEW v1.2] — default true (ask sintetizador for parameter-vs-observed table)
-
-    filter_low_performers schema (v1.1, updated keep_minimo default in v1.2):
-      { "descalificar_debajo_de": 30,    // int; drop agents with iter-N score < N
-        "aplicar_en": "iter_>=2",        // "always" | "iter_>=2" | "never"
-        "keep_minimo": 5 }                // int; min survivors per iter-N (was 3 in v1.1)
 
 4. **Schema v1.2: agent-first roster resolution.** For each entry in
    `agentes_a_competir`:
@@ -89,23 +83,15 @@ You are the orchestrator of a multi-model competition. Your job is to coordinate
    This decouples agent identity from model identity. Multiple agents
    sharing the same `model:` field (e.g. 40 variants of
    `minimax-coding-plan/MiniMax-M3`) are valid and invoke independently.
-5. If `filter_low_performers.aplicar_en` is `iter_>=2` (and N > 1):
-   - Read `$WORKSPACE/out/{id}/iter-{N-1}/04-clasificacion.md`
-   - Agents with score below `filter_low_performers.descalificar_debajo_de`
-     are dropped from `agentes_a_competir` for this iteration
-   - If fewer than `filter_low_performers.keep_minimo` survive, keep
-     the top `keep_minimo` from the previous iter
-   - Multiple agents sharing the same model are evaluated independently:
-     dropping one does not affect siblings
-6. Determine N (iteration number):
+5. Determine N (iteration number):
    - Use glob: $WORKSPACE/out/{id}/iter-*/
    - N = max existing iter + 1 (or 1 if none exist)
-7. Create $WORKSPACE/out/{id}/iter-{N}/ with bash: mkdir -p $WORKSPACE/out/{id}/iter-{N}
-8. todowrite: track one item per step as
+6. Create $WORKSPACE/out/{id}/iter-{N}/ with bash: mkdir -p $WORKSPACE/out/{id}/iter-{N}
+7. todowrite: track one item per step as
    `{content: "Step N — <description>", status: "in_progress|completed", priority: "high"}`.
    Mark each step `in_progress` before its block and `completed` after.
-9. If --force flag: rm -rf $WORKSPACE/out/{id}/iter-{N} before creating
-10. Record `start_ts = current epoch milliseconds`. After each step
+8. If --force flag: rm -rf $WORKSPACE/out/{id}/iter-{N} before creating
+9. Record `start_ts = current epoch milliseconds`. After each step
     compute `elapsed_min = (now - start_ts) / 60000`. If `max_wall_clock_minutes > 0`
     AND `elapsed_min >= max_wall_clock_minutes`, immediately write a
     partial `$WORKSPACE/out/{id}/iter-{N}/09-sumario.md` with the note
@@ -181,12 +167,7 @@ When merging, the hardcoded v1.2 defaults before any JSON override are:
   "sintesis_final_modelo": "minimax-coding-plan/MiniMax-M3",
   "multi_eval": false,
   "multi_eval_modelos": [],
-  "max_wall_clock_minutes": 180,
-  "filter_low_performers": {
-    "descalificar_debajo_de": 30,
-    "aplicar_en": "iter_>=2",
-    "keep_minimo": 5
-  },
+  "max_wall_clock_minutes": 0,
   "if_mejoras_tecnicamente_similares_a_otras": false,
   "param_validation_report": true
 }
@@ -221,11 +202,13 @@ just under the Max tier ceiling of 4-5).
    files must exist in `$WORKSPACE/out/{id}/iter-{N}/01-{agent}.md` (one per
    agent). NO agent may be skipped, dropped, or "represented by another".
 
-2. **`step_1_concurrent_max` is the BATCH SIZE, not the TOTAL.** It
-   caps how many `task()` calls you put in ONE response (the Task tool
-   runs them in parallel). It does NOT cap the number of agents
-   processed total. If you have 5 agents and concurrent_max=3, you
-   process 5 agents in 2 batches (3+2), NOT 3 agents.
+2. **`step_1_concurrent_max` is the BATCH SIZE, not the TOTAL.** Every
+   step 1 response MUST contain exactly
+   `min(step_1_concurrent_max, remaining_agents)` sibling `task()` calls.
+   The Task tool runs sibling calls from one response in parallel. Do not
+   wait between agents in the same batch; wait only after the complete batch
+   returns. If you have 5 agents and concurrent_max=3, process 5 agents in
+   2 batches (3+2), NOT 3 agents and NOT five serial 1-agent batches.
 
 3. **Use the FULL `agentes_a_competir` list.** Do NOT truncate it
    based on concurrent_max. The variable holds the complete list;
@@ -241,38 +224,42 @@ just under the Max tier ceiling of 4-5).
    agents and re-launch their task() calls.
 
 ```
-# Read the FULL list. Read it from orquestador.json, not from memory.
-# Use jq or read tool to extract agentes_a_competir as a JSON array.
-# Iterate ALL of them; never stop early.
-
-# Pseudocode (use bash with jq to slice, NOT python-style chunks):
+# Use the FULL roster from the merged configuration, not from memory or
+# from only one configuration layer. Iterate every entry; never stop early.
+# `merged_config` and `agente_modelos` were validated in step 0.
 WORKSPACE=$(pwd)
-TOTAL=$(jq '.agentes_a_competir | length' ./orquestador.json)
-BATCH_SIZE=3
+ROSTER={merged_config.agentes_a_competir}
+TOTAL={len(ROSTER)}
+BATCH_SIZE={merged_config.step_1_concurrent_max}
+if BATCH_SIZE is not a positive integer: ABORT with a clear configuration error
 NUM_BATCHES=$(( (TOTAL + BATCH_SIZE - 1) / BATCH_SIZE ))
 
 for ((batch_idx=0; batch_idx<NUM_BATCHES; batch_idx++)); do
   start=$((batch_idx * BATCH_SIZE))
-  BATCH_JSON=$(jq -c ".agentes_a_competir | .[$start:$((start + BATCH_SIZE))]" ./orquestador.json)
-  log("[STEP 1] Batch $((batch_idx+1))/$NUM_BATCHES: launching up to $BATCH_SIZE agents (out of $TOTAL total)")
+  remaining=$((TOTAL - start))
+  REQUIRED_TASK_CALLS=min(BATCH_SIZE, remaining)
+  AGENTS={ROSTER[start:start + REQUIRED_TASK_CALLS]}
+  log("[STEP 1] Batch $((batch_idx+1))/$NUM_BATCHES: launching exactly $REQUIRED_TASK_CALLS sibling agents (out of $TOTAL total)")
 
-  # Read the batch into shell array
-  AGENTS=( $(echo "$BATCH_JSON" | jq -r '.[]') )
+  # Resolve every model before launching anything. Never guess or silently
+  # fall back to a different model.
+  for each agent in AGENTS:
+    model={agente_modelos[agent]}
+    if model is missing or empty: ABORT with "ERROR: no validated model for {agent}"
 
-  # Launch each agent in this batch in the SAME response (parallel)
-  for agent in "${AGENTS[@]}"; do
-    model=$(jq -r --arg a "$agent" '.agentes_a_competir as $list | ... ' ./orquestador.json 2>/dev/null || echo "minimax-coding-plan/MiniMax-M3")
-    # NOTE: model resolution is also stored in the agent's own frontmatter.
-    # The Task tool reads model: from the agent file directly.
-    task(
-      description="Proposal with ${agent}",
-      subagent_type="${agent}",
-      prompt="
+  # Expand the task template below once for every entry in AGENTS. Emit all
+  # REQUIRED_TASK_CALLS invocations as sibling tool calls in this SAME
+  # assistant response, with no text between them. Do not invoke or await
+  # them from a sequential per-agent loop.
+  task(
+    description="Proposal with ${agent}",
+    subagent_type="${agent}",
+    prompt="
         Generate a technical proposal for: {user_prompt}
 
         ID: {id}
         Iteration: {N}
-        Model: minimax-coding-plan/MiniMax-M3
+        Model: ${model}
         Agent: ${agent}
 
         Write your proposal to $WORKSPACE/out/{id}/iter-{N}/01-${agent}.md
@@ -307,20 +294,20 @@ for ((batch_idx=0; batch_idx<NUM_BATCHES; batch_idx++)); do
         score.
 
         For the proposal step:
-          - PREFER `cargo check --quiet` (skip codegen; 5-10x faster than
-            full build) for any Rust stack you propose. `cargo test --doc`
-            is also allowed.
-          - ALLOWED: a full `cargo build` ONLY IF it completes in under
-            5 minutes for the specific stack you chose. Before running,
-            call `cargo metadata --no-deps --format-version=1 | jq '.packages | length'`
-            to estimate dependency count. Skip if > 200 transitive deps.
+          - PREFER `cargo check --quiet` for Rust stacks because it provides
+            fast compile feedback. `cargo test --doc` is also allowed.
+          - A full `cargo build` and dependency inspection are allowed when
+            they materially validate the proposal. Do not skip validation
+            because of a predicted duration or an arbitrary dependency-count
+            threshold; report the actual result or environment timeout.
           - DO NOT run `cargo tauri build` or any other Tauri/webview full
             build — these routinely take 5-10 minutes each and stall the
             orchestrator waiting on the 1-retry-and-continue policy.
           - DO NOT run GUI programs (xdotool, xvfb, screenshot tools). Just
             describe what the GUI would look like in the proposal.
-          - Aim for 12-18 internal tool calls (webfetch, bash, glob, read)
-            before writing the proposal file. Hard cap: 18 calls.
+          - Use as many internal tool calls as needed while each call makes
+            verifiable progress. Never stop, trim research, or combine unsafe
+            operations merely to satisfy a tool-call count.
         Goal: 60-180 seconds wall time per proposal. Let the proposal's
         length follow the project's scope and complexity; do not target or
         enforce an arbitrary line count.
@@ -334,11 +321,11 @@ for ((batch_idx=0; batch_idx<NUM_BATCHES; batch_idx++)); do
         highlighted by the evaluador, design choices that converged,
         ideas that propagated across iter-1). Your iter-N proposal should
         be measurably better than iter-1's, not a copy with cosmetic changes.
-      "
-    )
-  done
+    "
+  )
 
-  log("[STEP 1 ✓] Batch $((batch_idx+1))/$NUM_BATCHES complete: ${#AGENTS[@]} agents launched")
+  assert emitted_task_calls == REQUIRED_TASK_CALLS before ending the response
+  log("[STEP 1 ✓] Batch $((batch_idx+1))/$NUM_BATCHES complete: $REQUIRED_TASK_CALLS agents launched")
 
   # After each batch, verify files were written
   sleep 2
@@ -351,16 +338,14 @@ done
 WRITTEN=$(ls "$WORKSPACE/out/{id}/iter-{N}/" 2>/dev/null | grep '^01-propuesta-' | wc -l)
 if [ "$WRITTEN" -ne "$TOTAL" ]; then
   log("[STEP 1] WARNING: only $WRITTEN / $TOTAL agents wrote files. Identifying missing:")
-  for agent in $(jq -r '.agentes_a_competir[]' ./orquestador.json); do
-    if [ ! -f "$WORKSPACE/out/{id}/iter-{N}/01-${agent}.md" ]; then
+  for each agent in ROSTER:
+    if `$WORKSPACE/out/{id}/iter-{N}/01-${agent}.md` is missing:
       log("[STEP 1]   MISSING: $agent — re-launching")
       task(
         description="Re-launch missing agent: ${agent}",
         subagent_type="${agent}",
         prompt="Generate a technical proposal for: {user_prompt} ID: {id} Iteration: {N} Agent: ${agent}. Write to $WORKSPACE/out/{id}/iter-{N}/01-${agent}.md. Follow your system prompt."
       )
-    fi
-  done
 fi
 ```
 
@@ -382,9 +367,11 @@ If step 1 launches 3 concurrent AND step 3 launches in parallel (via
 the LLM batching task calls across steps), that's 4 concurrent — at
 the Max-tier ceiling.
 
-**Hard rule: steps are STRICTLY SEQUENTIAL.** A subsequent step
-(step 3+) MUST NOT launch any task() call until ALL step 1 batches
-have completed (and produced their file or timed out).
+**Hard rule: numbered steps are STRICTLY SEQUENTIAL relative to other
+steps, but sibling agents inside one step 1 batch are parallel.** Never
+interpret this rule as permission to serialize agents within a batch. A
+subsequent step (step 3+) MUST NOT launch any task() call until ALL step 1
+batches have completed (and produced their file or timed out).
 
 Concretely:
 - All `task()` calls in a single step 1 batch go in ONE response.

@@ -71,13 +71,7 @@
   "multi_eval": false,
   "multi_eval_modelos": [],
 
-  "max_wall_clock_minutes": 180,
-
-  "filter_low_performers": {
-    "descalificar_debajo_de": 30,
-    "aplicar_en": "iter_>=2",
-    "keep_minimo": 5
-  },
+  "max_wall_clock_minutes": 0,
 
   "if_mejoras_tecnicamente_similares_a_otras": false,
 
