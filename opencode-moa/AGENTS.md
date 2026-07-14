@@ -537,6 +537,134 @@ IN); the Grupo B variants are expected to score highest on the axis
 they target, providing within-cohort signal on which quality dimension
 matters most for a given prompt.
 
+## 12. Per-subagent work directory convention
+
+### Why this exists
+
+Before v1.3.x, propuesta and validador subagents did their
+empirical work (cargo scaffolds, downloaded dependencies, compiled
+binaries) wherever they imagined. In the v5 experiment
+(`docs/research/experiments/2026-07-13-rust-gui-popup-v5.md` §9) the
+artifacts ended up scattered across the workspace:
+
+- `/tmp/opencode-moa-v5-test/rust-gui-popup/` — winner's 53 MB binary
+- `/tmp/opencode-moa-v5-test/iced-test/` — mimo's iced verification
+- `/tmp/opencode-moa-v5-test/gtk4-overlay-test/` — gtk4-layer-shell verification
+
+Cleaning up a run meant `find /tmp -name 'opencode-moa-*' -prune`.
+Iterating across rounds polluted prior runs. The convention below
+fixes this.
+
+### The three first-class sibling directories
+
+Every iteration creates three siblings under `$WORKSPACE/`:
+
+| Directory | Purpose | Typical content |
+|---|---|---|
+| `out/{id}/iter-{N}/` | Pipeline reports (existing) | `.md` files only |
+| `work/{id}/iter-{N}/{step-prefix}/` | Per-subagent empirical scratch space | cargo scaffolds, `node_modules/`, compiled binaries, downloaded assets |
+| `logs/{id}/iter-{N}/{step-prefix}.log` | Per-subagent bash session log | stdout/stderr of the subagent's bash invocations |
+
+### Naming rule
+
+The work subdirectory uses the same prefix as the output file
+(without `.md`). The mapping is:
+
+| Step | Output file in `out/` | Work dir in `work/` | Log file in `logs/` |
+|---|---|---|---|
+| 1 | `01-propuesta-{agente}.md` | `01-propuesta-{agente}/` | `01-propuesta-{agente}.log` |
+| 2 | `02-validacion-{agente}.md` | `02-validacion-{agente}/` | `02-validacion-{agente}.log` |
+| 3 | `03-calificacion-evaluador.md` | `03-calificacion-evaluador/` | `03-calificacion-evaluador.log` |
+| 4 | `04-clasificacion.md` | `04-clasificacion/` | `04-clasificacion.log` |
+| 5 (`sintesis_central`) | `05-propuesta-integrada.md` | `05-propuesta-integrada/` | `05-propuesta-integrada.log` |
+| 5 (`self_improve`) | `05-mejorada-{agente}.md` | `05-mejorada-{agente}/` | `05-mejorada-{agente}.log` |
+| 6 | `06-validacion-{candidato}.md` | `06-validacion-{candidato}/` | `06-validacion-{candidato}.log` |
+| 7 | `07-calificacion-final.md` | `07-calificacion-final/` | `07-calificacion-final.log` |
+| 8 | `08-ganador.md` | `08-ganador/` | `08-ganador.log` |
+| 9 | `09-sumario.md` | (none — orchestrator writes directly) | (none) |
+| 10 | `10-sintesis-cross-iter.md` | `10-sintesis-cross-iter/` | `10-sintesis-cross-iter.log` |
+
+### Worked example
+
+For the v5 prompt with `id = rust-gui-popup-v5`, the new layout
+would have been:
+
+```
+rust-gui-popup-v5/
+├── out/iter-1/
+│   ├── 01-propuesta-minimax-baseline-08.md   (the gtk4 0.10 winner)
+│   ├── 02-validacion-minimax-baseline-08.md
+│   ├── ...
+│   └── 09-sumario.md
+├── work/iter-1/
+│   ├── 01-propuesta-minimax-baseline-08/   ← the 53 MB gtk4 binary lives here
+│   │   ├── Cargo.toml
+│   │   ├── src/main.rs
+│   │   └── target/release/rust-gui-popup (53 MB)
+│   ├── 01-propuesta-mimo/                  ← the iced scaffold lives here
+│   │   └── iced-test/
+│   └── 06-validacion-integrada/
+└── logs/iter-1/
+    ├── 01-propuesta-minimax-baseline-08.log
+    ├── 01-propuesta-mimo.log
+    └── ...
+```
+
+### How it's wired
+
+1. `orquestador.md` step 0 creates all three siblings with
+   `mkdir -p` (or `rm -rf`s them under `--force`).
+2. Each `task()` call in steps 1, 2, 5, and 6 includes a
+   `=== WORK DIRECTORY ===` block with the absolute path so the
+   subagent knows where to write.
+3. Steps 3, 4, 7, 8 are pure reasoning — their work dirs are
+   created but typically stay empty. We still create them so the
+   pattern is uniform and future agents have a guaranteed scratch
+   location.
+4. Every agent's system prompt has a "## Work directory" section
+   near the top (after the ROLE OVERRIDE in Grupo B variants)
+   documenting the convention.
+
+### How to add a new step or new subagent
+
+1. Pick the step number and decide whether it can do empirical
+   work. If yes, add a row to the table above.
+2. Update `orquestador.md` step 0 to create the new work dir and
+   log file (if the new step follows the pattern).
+3. Update the corresponding `task()` prompt template to include
+   the `=== WORK DIRECTORY ===` block with the new paths.
+4. Add a "## Work directory" section to the new agent's system
+   prompt.
+
+### Why not a single flat `tmp/` inside the workspace?
+
+Three reasons:
+
+1. **Per-subagent isolation**: each subagent has its own folder
+   so two concurrent `propuesta-X` and `propuesta-Y` builds cannot
+   collide (they did in v5 — see the 4 gtk4 0.10 agents).
+2. **Easy cleanup**: `rm -rf work/{id}/iter-{N}/*` cleans every
+   subagent's scratch space in one shot, no `find /tmp -name
+   'opencode-moa-*'` hunting.
+3. **Iteration-level scoping**: iter-2's work never bleeds into
+   iter-1. The historical evidence in `work/iter-1/01-propuesta-X/`
+   stays attached to iter-1 even after iter-2 starts.
+
+### Disk budget
+
+Currently no size cap. The v5 gtk4 winner was 53 MB, mimo's iced
+scaffold was ~80 MB with `target/`. A degenerate loop (cargo build
+in a hot feedback loop) could fill the disk — tracked as a
+follow-up in `ROADMAP.md` §"v1.3.x additions shipped".
+
+### Backward compatibility
+
+The convention applies to runs started after the change. Existing
+runs in `out/` are untouched; the historical bitácoras
+(`docs/research/experiments/2026-07-13-rust-gui-popup-v5.md`) still
+reference the old `/tmp/opencode-moa-v5-test/{project}/` paths as
+historical evidence of the pre-convention behavior.
+
 ---
 
-*Last updated:* 2026-07-13 (v1.3 revision applied).
+*Last updated:* 2026-07-13 (v1.3 revision + work-dir convention applied).

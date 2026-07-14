@@ -4,6 +4,58 @@ All notable changes to `opencode-moa` are documented here. The format is based o
 
 ## [Unreleased]
 
+### Added (per-subagent work directory convention)
+
+Three first-class sibling directories are now created by the orchestrator
+in step 0 for every iteration:
+
+- `out/{id}/iter-{N}/` — existing, reports (.md) only.
+- `work/{id}/iter-{N}/{step-prefix}/` — NEW, empirical scratch space for
+  each subagent (cargo scaffolds, downloaded dependencies, compiled
+  binaries, intermediate files).
+- `logs/{id}/iter-{N}/{step-prefix}.log` — NEW first-class, bash session
+  log captured for each subagent invocation.
+
+Naming rule: the work subdirectory uses the same prefix as the output
+file (without `.md`). Example for `id = fib-rust-cli`, `iter-1`,
+`agent = propuesta-minimax-baseline-04`:
+
+- Proposal:   `out/fib-rust-cli/iter-1/01-propuesta-minimax-baseline-04.md`
+- Work dir:   `work/fib-rust-cli/iter-1/01-propuesta-minimax-baseline-04/`
+- Log file:   `logs/fib-rust-cli/iter-1/01-propuesta-minimax-baseline-04.log`
+
+Same pattern across all 10 steps (see `opencode-moa/AGENTS.md` §12 for
+the full table). Step 9 (summary) is written by the orchestrator
+directly and uses neither work dir nor log file.
+
+### Changed
+
+- Each `task()` prompt emitted by the orchestrator now includes the
+  subagent's absolute work directory and log path in a
+  `=== WORK DIRECTORY ===` block. The subagent is explicitly told to
+  use it exclusively for empirical artifacts and NEVER use `/tmp`,
+  the workspace root, or any path under `out/{id}/iter-{N}/` for those.
+- All 42 `propuesta-*.md` agents received a "## Work directory"
+  section right before `# Role` (after the ROLE OVERRIDE block in the
+  Grupo B variants, so the override directive still wins).
+- `validador.md`, `evaluador.md`, and `sintetizador.md` received
+  role-specific "## Work directory" sections with the exact paths
+  for each of their modes (steps 2/6, 3/7, 4/5/8/10 respectively).
+- `--force` flag now removes ALL THREE sibling directories for that
+  iteration (`out/`, `work/`, `logs/`) before recreating them, so
+  re-running a failed iteration starts from a clean slate.
+- `orquestador.md` gained a "Per-subagent work directory" section
+  under Fundamental rules with the full naming table and the rule
+  that step 0 must create all three.
+
+### Notes
+
+- Backward compatible: existing runs in `out/` are untouched. The
+  convention applies to runs started after this change. Older runs
+  that scattered artifacts in `/tmp/opencode-moa-v5-test/{project}/`
+  etc. are left as-is — they remain as historical evidence in
+  `docs/research/experiments/2026-07-13-rust-gui-popup-v5.md`.
+
 ### Changed
 
 - Removed all line-count quotas from proposal agents, the evaluator, the validator, the synthesizer, and the orchestrator prompts. Output length now follows the scope and completeness requirements of each task instead of fixed minimums or maximums.
