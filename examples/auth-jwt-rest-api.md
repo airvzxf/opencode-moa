@@ -180,14 +180,28 @@ The full flow repeats: validate, evaluate, classify, improve, re-validate, re-ev
 
 ## Final output
 
-After 3 iterations, `out/auth-jwt/` contains:
+After 3 iterations, each of `out/auth-jwt/`, `work/auth-jwt/`, and
+`logs/auth-jwt/` contains:
 ```
 iter-1/  (16 files, winner mimo-m3 with 48/50)
 iter-2/  (16 files, winner mimo-m3 with 49/50)
 iter-3/  (16 files, winner mimo-m3 with 49/50, same as iter-2)
 ```
 
-Total: 48 files, plus the iter-3 `09-sumario.md` contains the final winner and convergence status.
+The `out/` directory is the canonical pipeline output. The
+matching `work/auth-jwt/iter-N/` holds each subagent's private
+empirical artifacts (cargo scaffolds, downloaded dependencies,
+intermediate test code, compiled binaries) — naming mirrors `out/`:
+e.g. `out/auth-jwt/iter-3/01-propuesta-mimo.md` ↔
+`work/auth-jwt/iter-3/01-propuesta-mimo/`. The `logs/auth-jwt/iter-N/`
+directory holds the bash session log captured for each subagent
+(e.g. `logs/auth-jwt/iter-3/01-propuesta-mimo.log`).
+
+Total: 48 `.md` files in `out/` plus per-subagent work dirs in
+`work/` (most empty; the one with the winning implementation may
+hold 50–200 MB of `node_modules/` and the compiled server) plus
+per-subagent `.log` files in `logs/`. The iter-3 `09-sumario.md`
+contains the final winner and convergence status.
 
 ## Cost estimate
 

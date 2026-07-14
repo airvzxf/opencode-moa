@@ -74,8 +74,11 @@ Or with the smoke test (validates the pipeline with a trivial prompt):
 
 ### 3. Inspect results
 
+Each iteration produces THREE sibling directories — one for reports
+(`.md`), one for empirical scratch space, one for bash logs:
+
 ```
-out/auth-jwt/iter-1/
+out/auth-jwt/iter-1/                   ← reports (.md)
 ├── 01-propuesta-glm.md
 ├── 01-propuesta-kimi.md
 ├── 01-propuesta-mimo.md
@@ -93,7 +96,30 @@ out/auth-jwt/iter-1/
 ├── 07-calificacion-final.md
 ├── 08-ganador.md
 └── 09-sumario.md
+
+work/auth-jwt/iter-1/                   ← empirical artifacts (per subagent)
+├── 01-propuesta-glm/                   ← cargo scaffolds, downloaded deps,
+│   ├── Cargo.toml                       compiled binaries, scratch test code
+│   └── target/release/binary (53 MB)
+├── 01-propuesta-kimi/
+├── 02-validacion-glm/                  ← per-section viability scratch
+├── 03-calificacion-evaluador/          ← usually empty (pure reasoning)
+└── ...
+
+logs/auth-jwt/iter-1/                   ← bash session log per subagent
+├── 01-propuesta-glm.log
+├── 01-propuesta-kimi.log
+├── 02-validacion-glm.log
+├── 03-calificacion-evaluador.log
+└── ...
 ```
+
+The `work/` directory is the subagent's private scratch space —
+the orchestrator creates it before invoking each agent and tells
+the agent to put ALL empirical work there. No more scattered
+`/tmp/opencode-moa-{test}/rust-gui-popup/` directories. Naming
+rule: the `work/` subdir uses the same prefix as the output file
+(without `.md`), so `01-propuesta-glm.md` ↔ `01-propuesta-glm/`.
 
 ## Repository structure
 

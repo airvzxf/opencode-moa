@@ -186,32 +186,72 @@ El orquestador agent corre internamente, lanza subagents en paralelo, espera res
 
 ### 4.2 Outputs (generados por los agentes)
 
+Cada iteración crea TRES directorios hermanos bajo `<proyecto>/`:
+
+- `out/{id}/iter-{N}/` — reports (.md), el output canónico del pipeline.
+- `work/{id}/iter-{N}/{step-prefix}/` — espacio privado de scratch para
+  cada subagente (cargo scaffolds, deps descargados, binarios
+  compilados). El naming usa el mismo prefijo que el archivo de output
+  (sin `.md`).
+- `logs/{id}/iter-{N}/{step-prefix}.log` — log de sesión bash por
+  subagente.
+
 ```
-<proyecto>/out/
-└── {id}/
-    ├── iter-1/
-    │   ├── 01-propuesta-glm.md
-    │   ├── 01-propuesta-kimi.md
-    │   ├── 01-propuesta-mimo.md
-    │   ├── 02-validacion-glm.md
-    │   ├── 02-validacion-kimi.md
-    │   ├── 02-validacion-mimo.md
-    │   ├── 03-calificacion-evaluador.md
-    │   ├── 04-clasificacion.md
-    │   ├── 05-mejorada-glm.md
-    │   ├── 05-mejorada-kimi.md
-    │   ├── 05-mejorada-mimo.md
-    │   ├── 06-validacion-mejorada-glm.md
-    │   ├── 06-validacion-mejorada-kimi.md
-    │   ├── 06-validacion-mejorada-mimo.md
-    │   ├── 07-calificacion-final.md
-    │   ├── 08-ganador.md
-    │   └── 09-sumario.md
-    ├── iter-2/
-    │   └── ... (misma estructura)
-    └── iter-N/
-        └── ...
+<proyecto>/
+├── out/{id}/
+│   ├── iter-1/
+│   │   ├── 01-propuesta-glm.md
+│   │   ├── 01-propuesta-kimi.md
+│   │   ├── 01-propuesta-mimo.md
+│   │   ├── 02-validacion-glm.md
+│   │   ├── 02-validacion-kimi.md
+│   │   ├── 02-validacion-mimo.md
+│   │   ├── 03-calificacion-evaluador.md
+│   │   ├── 04-clasificacion.md
+│   │   ├── 05-mejorada-glm.md
+│   │   ├── 05-mejorada-kimi.md
+│   │   ├── 05-mejorada-mimo.md
+│   │   ├── 06-validacion-mejorada-glm.md
+│   │   ├── 06-validacion-mejorada-kimi.md
+│   │   ├── 06-validacion-mejorada-mimo.md
+│   │   ├── 07-calificacion-final.md
+│   │   ├── 08-ganador.md
+│   │   └── 09-sumario.md
+│   ├── iter-2/
+│   │   └── ... (misma estructura)
+│   └── iter-N/
+│       └── ...
+├── work/{id}/iter-1/                  ← scratch por subagente
+│   ├── 01-propuesta-glm/                (cargo scaffolds, node_modules/, etc.)
+│   ├── 01-propuesta-kimi/
+│   ├── 01-propuesta-mimo/
+│   ├── 02-validacion-glm/
+│   ├── 03-calificacion-evaluador/      (típicamente vacío; puro razonamiento)
+│   └── ...
+└── logs/{id}/iter-1/                  ← bash session log por subagente
+    ├── 01-propuesta-glm.log
+    ├── 01-propuesta-kimi.log
+    ├── 01-propuesta-mimo.log
+    ├── 02-validacion-glm.log
+    ├── 03-calificacion-evaluador.log
+    └── ...
 ```
+
+**Regla de naming**: el subdir de `work/` y el archivo de `logs/` usan
+el mismo prefijo que el archivo de output (sin `.md`). Ejemplo:
+
+- `out/.../01-propuesta-glm.md` ↔ `work/.../01-propuesta-glm/` ↔ `logs/.../01-propuesta-glm.log`
+- `out/.../02-validacion-glm.md` ↔ `work/.../02-validacion-glm/` ↔ `logs/.../02-validacion-glm.log`
+
+El step 9 (sumario) lo escribe el orquestador directamente y no tiene
+work dir ni log file. Los meta-agentes de puro razonamiento (steps 3,
+4, 7, 8) tienen su work dir creado pero típicamente vacío — el patrón
+se mantiene uniforme por simetría.
+
+El orquestador crea los 3 directorios con `mkdir -p` en step 0 y los
+borra con `rm -rf` si se pasa `--force`. Cada `task()` incluye un
+bloque `=== WORK DIRECTORY ===` con la ruta absoluta del work dir del
+subagente y la ruta del log file.
 
 ### 4.3 Flujo visual
 

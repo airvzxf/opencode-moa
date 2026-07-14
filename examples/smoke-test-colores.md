@@ -39,6 +39,11 @@ From any directory (or from inside OpenCode), run:
 
 ## Expected output
 
+The orchestrator creates THREE sibling directories per iteration.
+For the smoke test, only the `out/` directory will have content —
+`work/` and `logs/` will exist but stay empty (or near-empty) since
+the proposal agents have no empirical work to do:
+
 ```
 out/smoke/iter-1/
 ├── 01-propuesta-glm.md       (~30 lines, lists 7 colors)
@@ -58,14 +63,20 @@ out/smoke/iter-1/
 ├── 07-calificacion-final.md  (~80 lines)
 ├── 08-ganador.md             (winner announcement)
 └── 09-sumario.md             (final summary with score)
+
+work/smoke/iter-1/            (created but empty for the smoke test)
+logs/smoke/iter-1/            (one empty .log file per subagent)
 ```
 
-Total: 16 files.
+Total: 16 `.md` files in `out/` + 10 (possibly empty) `.log` files
+in `logs/` + empty `work/` subdirs.
 
 ## Success criteria
 
-- [ ] All 16 files are generated
-- [ ] `09-sumario.md` contains a winner name and score
+- [ ] All 16 `.md` files are generated in `out/smoke/iter-1/`
+- [ ] `out/smoke/iter-1/09-sumario.md` contains a winner name and score
+- [ ] `logs/smoke/iter-1/` has one `.log` file per subagent invocation (10 files total)
+- [ ] `work/smoke/iter-1/` exists with the 10 subagent subdirs (may be empty for the smoke test)
 - [ ] The session log shows all 10 steps completed
 - [ ] No error messages in the OpenCode output
 

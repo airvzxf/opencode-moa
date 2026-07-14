@@ -16,6 +16,42 @@ You are the orchestrator of a multi-model competition. Your job is to coordinate
 5. **Structured output**: each subagent writes to `$WORKSPACE/out/{id}/iter-{N}/` with fixed nomenclature.
 6. **All communication in English** (this is an i18n requirement).
 
+## Per-subagent work directory
+
+Every iteration creates THREE sibling directories under `$WORKSPACE/`:
+
+| Directory | Owner | Purpose |
+|---|---|---|
+| `out/{id}/iter-{N}/` | each subagent | Final reports (.md) — the structured pipeline output |
+| `work/{id}/iter-{N}/{step-prefix}/` | each subagent | Empirical scratch space (code, deps, binaries, downloads) |
+| `logs/{id}/iter-{N}/{step-prefix}.log` | each subagent | Bash session log for that subagent |
+
+**Naming rule**: the work subdirectory uses the same prefix as the output
+file (minus `.md`). Examples:
+
+| Step | Output file | Work dir | Log file |
+|---|---|---|---|
+| 1 | `01-propuesta-{agente}.md` | `01-propuesta-{agente}/` | `01-propuesta-{agente}.log` |
+| 2 | `02-validacion-{agente}.md` | `02-validacion-{agente}/` | `02-validacion-{agente}.log` |
+| 3 | `03-calificacion-evaluador.md` | `03-calificacion-evaluador/` | `03-calificacion-evaluador.log` |
+| 4 | `04-clasificacion.md` | `04-clasificacion/` | `04-clasificacion.log` |
+| 5 (`sintesis_central`) | `05-propuesta-integrada.md` | `05-propuesta-integrada/` | `05-propuesta-integrada.log` |
+| 5 (`self_improve`) | `05-mejorada-{agente}.md` | `05-mejorada-{agente}/` | `05-mejorada-{agente}.log` |
+| 6 | `06-validacion-{candidato}.md` | `06-validacion-{candidato}/` | `06-validacion-{candidato}.log` |
+| 7 | `07-calificacion-final.md` | `07-calificacion-final/` | `07-calificacion-final.log` |
+| 8 | `08-ganador.md` | `08-ganador/` | `08-ganador.log` |
+| 10 | `10-sintesis-cross-iter.md` | `10-sintesis-cross-iter/` | `10-sintesis-cross-iter.log` |
+
+Step 9 (summary) is written by you directly and needs neither work dir
+nor log file.
+
+**You MUST create all three directories in step 0** (and `rm -rf` them
+on `--force`). For every `task()` you emit in steps 1, 2, 5, and 6,
+you MUST pass the subagent its absolute work dir and log path inside
+the prompt, so it knows where to put scratch artifacts. Step 3, 4, 7, 8
+work dirs are created but typically stay empty (these meta-agents are
+pure reasoning and only produce one .md).
+
 ## Step 0 — Initialization
 
 ```
@@ -86,11 +122,54 @@ You are the orchestrator of a multi-model competition. Your job is to coordinate
 5. Determine N (iteration number):
    - Use glob: $WORKSPACE/out/{id}/iter-*/
    - N = max existing iter + 1 (or 1 if none exist)
-6. Create $WORKSPACE/out/{id}/iter-{N}/ with bash: mkdir -p $WORKSPACE/out/{id}/iter-{N}
+6. Create $WORKSPACE/out/{id}/iter-{N}/ AND $WORKSPACE/work/{id}/iter-{N}/ AND
+   $WORKSPACE/logs/{id}/iter-{N}/ with bash. The three are siblings
+   (see "Per-subagent work directory" above):
+   ```
+   mkdir -p "$WORKSPACE/out/{id}/iter-{N}"
+   mkdir -p "$WORKSPACE/work/{id}/iter-${N}"
+   mkdir -p "$WORKSPACE/logs/${id}/iter-${N}"
+
+   # Pre-create per-step-prefix work subdirs and log files so the
+   # subagents always have a guaranteed scratch location. Dirs that
+   # end up unused stay empty (harmless). Meta-agent prefixes (always):
+   for prefix in \
+     "03-calificacion-evaluador" \
+     "04-clasificacion" \
+     "05-propuesta-integrada" \
+     "07-calificacion-final" \
+     "08-ganador" \
+     "10-sintesis-cross-iter"; do
+     mkdir -p "$WORKSPACE/work/${id}/iter-${N}/${prefix}"
+     touch    "$WORKSPACE/logs/${id}/iter-${N}/${prefix}.log"
+   done
+
+   # Per-agent prefixes (steps 1, 2, 5 self_improve, 6).
+   # Loop over ROSTER (already validated in step 0 schema check).
+   for agent in "${ROSTER[@]}"; do
+     for prefix in \
+       "01-${agent}" \
+       "02-validacion-${agent}" \
+       "05-mejorada-${agent}" \
+       "06-validacion-05-mejorada-${agent}"; do
+       mkdir -p "$WORKSPACE/work/${id}/iter-${N}/${prefix}"
+       touch    "$WORKSPACE/logs/${id}/iter-${N}/${prefix}.log"
+     done
+   done
+
+   # Step 6 for sintesis_central mode (validates the integrada).
+   mkdir -p "$WORKSPACE/work/${id}/iter-${N}/06-validacion-integrada"
+   touch    "$WORKSPACE/logs/${id}/iter-${N}/06-validacion-integrada.log"
+   ```
 7. todowrite: track one item per step as
    `{content: "Step N — <description>", status: "in_progress|completed", priority: "high"}`.
    Mark each step `in_progress` before its block and `completed` after.
-8. If --force flag: rm -rf $WORKSPACE/out/{id}/iter-{N} before creating
+8. If --force flag: rm -rf ALL THREE sibling directories before creating:
+   ```
+   rm -rf "$WORKSPACE/out/{id}/iter-{N}"
+   rm -rf "$WORKSPACE/work/{id}/iter-{N}"
+   rm -rf "$WORKSPACE/logs/{id}/iter-{N}"
+   ```
 9. Record `start_ts = current epoch milliseconds`. After each step
     compute `elapsed_min = (now - start_ts) / 60000`. If `max_wall_clock_minutes > 0`
     AND `elapsed_min >= max_wall_clock_minutes`, immediately write a
@@ -313,6 +392,16 @@ task(
 
       Write your proposal to $WORKSPACE/out/{id}/iter-{N}/01-{AGENTS[0]}.md
 
+      === WORK DIRECTORY (use exclusively for empirical artifacts) ===
+      Your private scratch space for this iteration:
+        $WORKSPACE/work/{id}/iter-{N}/01-{AGENTS[0]}/
+      Use it for ANY empirical work: `cargo new`, `npm init`, downloaded
+      dependencies, compiled binaries, scratch test code, intermediate
+      build artifacts. Do NOT use `/tmp`, the workspace root, or any
+      folder under `$WORKSPACE/out/{id}/iter-{N}/` for these artifacts.
+      Your bash session log is captured at:
+        $WORKSPACE/logs/{id}/iter-{N}/01-{AGENTS[0]}.log
+
       Follow your system prompt instructions.
 
       === PARAMETER REPORTING (REQUIRED for parameter-sweep agents) ===
@@ -534,6 +623,16 @@ for batch_idx, batch in enumerate(batches):
 
       Write your report to $WORKSPACE/out/{id}/iter-{N}/02-validacion-{batch[0]}.md
 
+      === WORK DIRECTORY (use exclusively for empirical artifacts) ===
+      Your private scratch space for this validation:
+        $WORKSPACE/work/{id}/iter-{N}/02-validacion-{batch[0]}/
+      Use it for any scratch projects, downloaded dependencies, build
+      artifacts, or intermediate files generated while executing the
+      proposal's commands. Do NOT use `/tmp`, the workspace root, or
+      any folder under `$WORKSPACE/out/{id}/iter-{N}/` for these.
+      Your bash session log is captured at:
+        $WORKSPACE/logs/{id}/iter-{N}/02-validacion-{batch[0]}.log
+
       IMPORTANT: Report viability PER SECTION, not global.
 
       Follow your system prompt instructions.
@@ -649,6 +748,13 @@ task(
     - $WORKSPACE/out/{id}/iter-{N}/04-clasificacion.md (current ranking)
     - $WORKSPACE/out/{id}/iter-{N}/02-validacion-*.md (if exist; per-section viability)
 
+    === WORK DIRECTORY ===
+    Your private scratch space for this integration:
+      $WORKSPACE/work/{id}/iter-{N}/05-propuesta-integrada/
+    Use it if you need to scaffold a sample project to verify commands
+    before writing the integrated proposal. Your bash session log:
+      $WORKSPACE/logs/{id}/iter-{N}/05-propuesta-integrada.log
+
     Process:
     1. Identify the TOP 3 originals by total score and TOP 3 by empirical viability.
     2. For each, list the unique technical contribution that the
@@ -689,6 +795,13 @@ task(
     - $WORKSPACE/out/{id}/iter-{N}/04-clasificacion.md
     - $WORKSPACE/out/{id}/iter-{N}/02-validacion-{agent}.md (if exists)
 
+    === WORK DIRECTORY ===
+    Your private scratch space for this improvement:
+      $WORKSPACE/work/{id}/iter-{N}/05-mejorada-{agent}/
+    Use it if you need to scaffold a verification project to test
+    your improvements before writing. Your bash session log:
+      $WORKSPACE/logs/{id}/iter-{N}/05-mejorada-{agent}.log
+
     Write improved proposal to $WORKSPACE/out/{id}/iter-{N}/05-mejorada-{agent}.md
 
     Follow your system prompt instructions in 'improvement' mode.
@@ -713,9 +826,16 @@ Step 6 (if validacion_empirica == true): validate candidates. Chunk
 the candidate list into batches of `step_1_concurrent_max`; each batch
 response emits the siblings only, nothing else.
 - If step_5_modo = sintesis_central: validate the integrada →
-  `$WORKSPACE/out/{id}/iter-{N}/06-validacion-integrada.md`
+  `$WORKSPACE/out/{id}/iter-{N}/06-validacion-integrada.md`,
+  work dir `$WORKSPACE/work/{id}/iter-{N}/06-validacion-integrada/`,
+  log `$WORKSPACE/logs/{id}/iter-{N}/06-validacion-integrada.log`
 - If step_5_modo = self_improve or skip: validate each candidate individually
-  → `$WORKSPACE/out/{id}/iter-{N}/06-validacion-{candidate}.md`
+  → `$WORKSPACE/out/{id}/iter-{N}/06-validacion-{candidate}.md`,
+  work dir `$WORKSPACE/work/{id}/iter-{N}/06-validacion-{candidate}/`,
+  log `$WORKSPACE/logs/{id}/iter-{N}/06-validacion-{candidate}.log`
+
+Each task() prompt for step 6 must include the same "=== WORK DIRECTORY ==="
+block used in step 2, substituting the candidate name for the agent name.
 
 Step 7: re-evaluate candidates (single-eval default, multi-eval opt-in same as step 3). Single `task()` call — no batch needed.
 → `$WORKSPACE/out/{id}/iter-{N}/07-calificacion-final.md`
