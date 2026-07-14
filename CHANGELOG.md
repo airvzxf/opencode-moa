@@ -12,6 +12,7 @@ All notable changes to `opencode-moa` are documented here. The format is based o
 - `step_1_concurrent_max` now drives the actual batch size. Each response must emit exactly `min(batch_size, remaining_agents)` sibling `task()` calls, restoring parallel execution within batches while numbered steps remain sequential.
 - Removed the invalid jq model lookup and silent MiniMax fallback; each task now uses the validated `agente_modelos` map from step 0 and aborts when an agent lacks a model.
 - Restored `max_wall_clock_minutes: 0` as the unlimited default. Positive values remain available as an explicit opt-in global cutoff.
+- Strengthened the orchestrator's step-1 parallelism contract. The response that contains sibling `task()` calls must be 100% tool calls — zero prose, zero planning, zero status log lines — and all planning must live in the prior response. The "STRICTLY SEQUENTIAL" wording that biased the LLM toward serialization is replaced with a data-dependency model: steps form a DAG by file outputs, not by ordinal number. Orchestrator `temperature` lowered from 0.2 to 0.0 to reduce spontaneous prose that previously truncated batch 0 of step 1 mid-emission. Validated against a 42-agent run on 2026-07-13 (opencode 1.17.20): batches 1..13 now emit 3 sibling `task()` calls per response with identical creation timestamps in the opencode session DB.
 
 ### Changed (v1.3 — 2026-07-13, in local testing, not yet released)
 
