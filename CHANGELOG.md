@@ -135,6 +135,33 @@ Both lenses independently produce useful variants and the within-cohort signal i
 - `~/.config/opencode/orquestador.json` `$schema` updated to `v1.3.json`, `version` field to `1.3`. Schema fields unchanged from v1.2.1; the change is the roster content + new agent files.
 - `max_wall_clock_minutes` remains at 180 (carried from v1.2.1's bump; appropriate for the trimmed 41-agent roster).
 
+### Run D — 2026-07-13 fib-rust-cli v1.3 (6-baseline `sintesis_central` validation)
+
+**First documented run with the full pipeline (steps 1–10) executing end-to-end without synthetic substitutions.** Run B had `sintesis_central` + `validacion_empirica: true` but was blocked at step 2 by the `bash: ask` permission hang (steps 3/4/6/7/8 were filled in synthetically). Run C had `validacion_empirica: false` (v1.2.1 default) and `step_5_modo: skip`. Run D completes the picture on a different prompt domain (Rust Fibonacci CLI vs Rust GUI).
+
+- **ID:** `fib-rust-cli`
+- **Roster:** 6 baselines only (`propuesta-minimax-baseline-{01..06}`), overriding the v1.3.1 42-agent default. All 6 bind to `model: minimax-coding-plan/MiniMax-M3` with provider default temperature. No Grupo B, no parameter sweep, no OpenCode Go cross-model — minimum controlled cohort for variance measurement.
+- **Config:** `validacion_empirica: true`, `step_5_modo: sintesis_central`, `sintesis_final: true`, `param_validation_report: true`, `step_1_concurrent_max: 3`, `step_1_agent_timeout_seconds: 600`, `max_wall_clock_minutes: 0`.
+- **Outcome:** 6/6 originales written + 1 integradora sintetizada. **Winner: `05-propuesta-integrada.md`** (45/50, viabilidad 9.8/10). Margin over runner-up: **+1 point** over `01-propuesta-minimax-baseline-06.md` (44/50, 10/10). 0 descalificadas, 2 marcadas ⚠️ VIABLE CON ADVERTENCIAS (baseline-04 off-by-one boundary bug, baseline-05 panic-on-overflow + missing source).
+- **Wall-clock:** ~78 min (step 1 took 4 batches due to tool-call truncation re-emit; see below).
+- **Cost:** ~$0.07 estimated (all MiniMax Token Plan; byte-derived from Run C per-agent average, not measured via `model_remains`).
+
+**Key findings:**
+
+1. **§6.2 evidence at last:** integrated proposal (45/50) beats best original (44/50) by +1 point on a uniform-model 6-baseline cohort with full empirical validation of both candidates. **First methodologically clean §6.2 evidence.** The integrator's value is consolidation + defect detection, not model-diversity signal.
+2. **§6.3 evidence with uniform model:** 6 identical-input proposals converged on 10 ideas (4-6 of 6 majority on each). **Cross-pollination is a property of LLM sampling temperature, not a property of model diversity.** This refines §6.3 and informs the v1.3 baseline-cohort expansion rationale.
+3. **Defect detection rate:** 2 of 6 (33%) had real bugs the individual proposals did not self-correct (off-by-one boundary, panic-on-overflow). Plus 1 of 6 had a structural Completeness defect (omitted `src/main.rs`). The validator is a load-bearing step.
+
+**Bugs / observations to track:**
+
+- **NEW: step-1 tool-call truncation.** When the step-1 prompt text exceeds a length threshold, the orquestador's response carrying multiple `task()` siblings in one response is **truncated mid-emission** (observed with baseline-02 and baseline-03 in the second batch of 3). Mitigation in Run D: re-issue in a smaller batch. Open questions for v1.3.x follow-up: max prompt length before truncation, impact of `step_1_concurrent_max: 2` for long-prompt cohorts, DRY opportunity for the workdir/path block.
+- **`sintesis_central` did NOT hang on 6-agent cohort** (vs Run C's hang with 5+ agentes). Suggests the hang is intermittent or cohort-size-dependent. v1.3 default remains `step_5_modo: skip` until a larger cohort confirms stability.
+- **Per-subagent work/log dirs validated end-to-end.** The v1.3 `work/{id}/iter-1/{step-prefix}/` + `logs/{id}/iter-1/{step-prefix}.log` convention worked as designed: each of the 6 propuesta agents + 6 validador agents + 1 integradora validator had their own scratch subdir, and the integrator's source tree at `work/fib-rust-cli/iter-1/06-validacion-integrada/fib/` is the byte-exact reproduction of the proposed `src/main.rs`.
+
+**Reference:** `docs/research/experiments/2026-07-13-fib-rust-cli-v6.md` (full bitácora: setup, roster, wall-clock timeline, outputs, cost, outcome, variance analysis, within-cohort convergence, defect detection, sintesis_central validation, tool-call truncation, limitations, next experiments).
+
+**Paper draft updated:** `docs/papers/DRAFT-multi-model-orchestration.md` bumped to v0.3 with Run D added as §5.8 (results), §6.2.5 (cohorte uniforme §6.2 evidence), §6.3.3 (cross-pollination uniform model), §6.4 (Run D limitations), §7 future work items 5a/5b/5c (tool-call truncation, cross-domain repeat, bigger uniform cohort), §8 conclusion extended, §9 split into §9.1 Run C reference and §9.2 Run D reference.
+
 ### Planned for v0.3.0 (carry-over)
 
 - Multi-eval opt-in: support `evaluador-{model}.md` variants for users who want multi-model evaluation
