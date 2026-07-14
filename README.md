@@ -245,7 +245,8 @@ See [`docs/proposals/001-orquestador-nativo-opencode.md`](docs/proposals/001-orq
 - 📋 [Complete design proposal](docs/proposals/001-orquestador-nativo-opencode.md) — 23 sections covering every detail
 - 🔍 [Iterations analysis](docs/research/iterations-analysis.md) — empirical evidence backing the design decisions
 - 🧪 [v5 experiment bitácora](docs/research/experiments/2026-07-13-rust-gui-popup-v5.md) — 52-agent iter-1 with measured cost + 53 MB winner binary
-- 📄 [Paper draft (DRAFT v0.2)](docs/papers/DRAFT-multi-model-orchestration.md) — Run A/B/C synthesis with cost calibration
+- 🧪 [v6 experiment bitácora](docs/research/experiments/2026-07-13-fib-rust-cli-v6.md) — 6-baseline minimum-cohort `sintesis_central` + `validacion_empirica` end-to-end with defect-detection evidence
+- 📄 [Paper draft (DRAFT v0.3)](docs/papers/DRAFT-multi-model-orchestration.md) — Run A/B/C/D synthesis with cost calibration + minimum-cohort §6.2/§6.3 evidence
 - 📦 [Installation guide](docs/installation.md) — detailed install instructions for local, VPS, Docker, etc.
 - 🧪 [Examples](examples/) — minimal smoke test and full REST API example
 - 📝 [Changelog](CHANGELOG.md) — version history (v1.3 entry: 52 → 41 agentes, 8 new Grupo B variants)

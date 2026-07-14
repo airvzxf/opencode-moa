@@ -30,6 +30,8 @@ Each file is named `YYYY-MM-DD-<short-id>.md` and follows this layout:
 |------------|-------------------|----------|------------------------------------------------------------------------------|----------------------|
 | 2026-07-11 | rust-gui-app      | Rust GUI | Iter-1 complete, iter-2 partial (cuota cut)                                  | MiniMax-M3 42/50     |
 | 2026-07-12 | rust-gui-app-v3   | Rust GUI | Iter-1 complete (sintesis_central, steps 3/4/7/8 synthetic), iter-2 partial (1/12 propuesta) | integradora 46/50 (v0.3 sintesis_central) |
+| 2026-07-13 | rust-gui-popup-v5 | Rust GUI | 52-agent iter-1, step_5_modo:skip, validacion_empirica:false, 0 descalificadas, 26 ⚠️ | minimax-baseline-08 41/50 (gtk4 0.10) |
+| 2026-07-13 | fib-rust-cli-v6   | Rust CLI | 6-baseline iter-1, sintesis_central+validacion_empirica end-to-end, 0 descalificadas, 2 ⚠️ | integradora 45/50 (9.8/10 viabilidad) |
 
 ## Why a separate log file for each run
 

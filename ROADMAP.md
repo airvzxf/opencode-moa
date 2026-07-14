@@ -39,6 +39,11 @@ agentes removed.
   `01-propuesta-minimax-baseline-04/`). See `opencode-moa/AGENTS.md`
   §12 for the full table. `--force` cleans all three siblings for
   the iteration.
+- [x] **Run D validated `sintesis_central` + `validacion_empirica: true` end-to-end** on a 6-baseline minimum cohort (fib-rust-cli, 2026-07-13). This is the first run with the full pipeline (steps 1–10) executing without synthetic substitutions. Key empirical confirmations:
+  - **§6.2 evidence at last:** integrated proposal 45/50 beats best original 44/50 by +1 point on a uniform-model 6-baseline cohort. First methodologically clean §6.2 evidence.
+  - **§6.3 with uniform model:** 6 identical-input proposals converged on 10 ideas (4-6 of 6 majority on each). Cross-pollination is a property of LLM sampling temperature, not a property of model diversity. Refines §6.3.
+  - **Defect detection rate: 2 of 6 (33%)** caught real bugs (off-by-one boundary, panic-on-overflow). The validator is a load-bearing step, not a courtesy.
+  - **Bitácora:** `docs/research/experiments/2026-07-13-fib-rust-cli-v6.md`. **Paper draft bumped to v0.3** with §5.8 (Run D results), §6.2.5 (cohorte uniforme §6.2 evidence), §6.3.3 (cross-pollination uniform model), §6.4 (Run D limitations), §7 items 5a/5b/5c, §8 conclusion extended, §9 split into §9.1 Run C + §9.2 Run D.
 
 ### Planned v1.3.x follow-ups
 
@@ -57,6 +62,27 @@ agentes removed.
   build --release` produces >500 MB inside `work/`, the orchestrator
   should warn (currently no size cap; the v5 gtk4 winner was 53 MB
   which is fine, but a degenerate loop could fill the disk).
+- [ ] **NEW: Investigate step-1 tool-call truncation (Run D §5.8.7).**
+  When the step-1 prompt text exceeds a length threshold, the
+  orquestador's response carrying multiple `task()` siblings in one
+  response is truncated mid-emission (Run D observed with baseline-02
+  and baseline-03 in the second batch of 3). Open questions: (a)
+  what is the maximum prompt length before truncation? (b) Should
+  `step_1_concurrent_max` be lowered to 2 for cohorts with long
+  prompt templates? (c) Should the workdir/path block be DRY'd out of
+  the step-1 prompt and into the agent's own prompt template? (d) Is
+  this an opencode SDK 1.17.18 streaming-response bug or an LLM-side
+  truncation? See `DRAFT-multi-model-orchestration.md` §7.5a.
+- [ ] **NEW: Direct side-by-side §6.2 validation (Run D §7.5).**
+  Repeat fib-rust-cli with `step_5_modo: self_improve` on the same
+  6-baseline cohort. Goal: gold-standard §6.2 validation comparing
+  `sintesis_central` vs `self_improve × 6` on identical inputs. Cost:
+  ~2.5× Run D iter-1 (mostly the 6 self-improve calls).
+- [ ] **NEW: Cross-domain Run D repeat (Run D §7.5b).** Pick a
+  different prompt and run with the same 6-baseline cohort +
+  `sintesis_central` + `validacion_empirica: true`. Goal: confirm
+  Run D's findings (defect detection rate, +1 sintesis_central
+  margin, within-cohort convergence) generalize beyond Fibonacci.
 
 ### What v1.3 changed
 
