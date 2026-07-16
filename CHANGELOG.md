@@ -4,6 +4,101 @@ All notable changes to `opencode-moa` are documented here. The format is based o
 
 ## [Unreleased]
 
+### Run E — 2026-07-15 moodle-quiz-extractor v1.3 (21-agent Firefox WebExtension cohort)
+
+- **ID:** `moodle-quiz-extractor` — **first non-Rust prompt domain**
+  (Firefox WebExtension for Moodle quiz extraction, Spanish-language
+  prompt).
+- **Roster:** **21 agentes** (8 Group A baselines
+  `propuesta-minimax-baseline-{01..09}` minus 1 aborted = 8 successful,
+  6 Group B prompt injections {creative, minimal, security-first,
+  observability, ci-github, cd-releases}, 6 Group C parameter sweeps
+  {T05, T10, T15, P099, T05K50, T10K200}, 1 external
+  `propuesta-deepseek-flash`). **Largest `sintesis_central +
+  validacion_empirica` end-to-end cohort to date** (Run C had 52
+  agentes but `validacion_empirica: false` and `step_5_modo: skip`).
+- **Config:** `validacion_empirica: true`, `step_5_modo: sintesis_central`,
+  `sintesis_final: true`, `umbral_convergencia: 0.2` (tighter than Run
+  D's 0.5; not exercised in single iter), `max_iteraciones: 10`,
+  `max_wall_clock_minutes: 0` (unlimited), `param_validation_report:
+  true`, single iter (`/orquestar`).
+- **Outcome:** 20/21 originales written (`baseline-09` aborted after
+  2 empty retries) + 1 integradora sintetizada. **Winner:
+  `propuesta-minimax-T15`** (Group C, T=1.5 sweep; WXT 0.20.27 +
+  Turndown 7.2.4 + DOMPurify 3.4.12 + Zod 4.4.3 + fflate 0.8.3 + jsdom
+  29.1.1; score 43/50, composite **8.99/10**, viabilidad **9.2/10**).
+  **First time a Group C parameter-sweep agent has led an
+  opencode-moa ranking.** Top-3: T15 (8.99) > security-first (8.94)
+  > T05 (8.75). Margin over runner-up: **+0.05 points** over
+  `propuesta-minimax-security-first`. **Margin over the integrated
+  proposal: -2.94 points** — the integrated proposal ranked 16/22
+  with composite 6.05/10, AP=1 (4 critical-path defects). 1
+  **DESCALIFICADA** (`T05K50` — invalid MV2 manifest with JSON
+  comments + MV3-only `host_permissions` inside MV2). 1 **sin
+  validación** (`baseline-02` — validador aborted; conservatively
+  scored AP=5, Viability=5).
+- **Wall-clock:** ~5.76 h (50 sub-agent invocations).
+- **Cost:** ~$0.20 estimated (49 MiniMax Token Plan + 1 external
+  `propuesta-deepseek-flash` via opencode-go; byte-derived from Run
+  C per-agent average, not measured via `model_remains`).
+- **Key findings:**
+  - **§6.3 cross-pollination scales to 21-cohort and to a
+    non-trivial prompt domain.** 9 convergent themes (3+ of 21
+    agreement each), with WXT+MV3 floor at 12/21 — the strongest
+    convergence in the corpus to date. **Cross-pollination scales
+    with prompt complexity (number of orthogonal decision axes),
+    not just with cohort size.** For a prompt with N
+    requirements, a cohort of ~3N agents is likely sufficient to
+    surface the convergent defaults.
+  - **§6.2 counter-evidence (first in opencode-moa).** The
+    integrated proposal **lost** to the best original by 2.94
+    points (6.05/10 vs 8.99/10). The integrator introduced 4
+    critical-path defects that the originals did not have: (a)
+    broken `packTar` import (`new Pack()` vs lowercase `pack()`),
+    (b) asset path contradiction (`./assets/` vs `./quiz/...`),
+    (c) `pnpm audit --prod --audit-level high` endpoint retired
+    (HTTP 410), (d) `packageManager: "pnpm@10.x"` non-exact
+    (Corepack rejects). Plus 3 secondary defects. The §6.2
+    proposition is refined to "integration is typically
+    higher-scoring, except when the integrator introduces
+    critical-path defects." A "min viable integrator" mode is
+    proposed in v1.3.x §7.5f follow-ups.
+  - **First T-variant to win the ranking.** T15 (T=1.5) wins
+    with composite 8.99. Validates the v1.3 roster decision to
+    keep T15 (and drop T00/T03/T08) — the Group C parameter-sweep
+    agents are competitive with Group A baselines.
+  - **Defect detection scales roughly linearly with cohort size.**
+    Run D: 2 of 6 (33%) at 6-cohort. Run E: 13 of 21 (62%) at
+    21-cohort. ~13 distinct defects: 4 phantom npm packages
+    (`@wext/manifest`, `tarballjs`, `@webassembly-feature/web-ext`,
+    `@grafana/otel-cli-ls`), 2 wrong selectors (`_choice` vs
+    `_answer`), 1 Chrome-Apps-only API (`chrome.sockets.tcpServer`),
+    1 retracted endpoint (`pnpm audit --prod`), 1 invalid
+    `packageManager`, 1 wrong `strict_min_version`, 1 invalid
+    32-char OTLP `spanId`, 1 invalid manifest JSON (`//`
+    comments), 1 fabricated cmid, 1 fabricated Q2 example
+    content, 1 unpublishable manifest (`ADDON_ID_REQUIRED`).
+    The validator is **load-bearing for the cohort's overall
+    trustworthiness**, not a courtesy.
+  - **`sintesis_central` did not hang on the 21-agent cohort**
+    (despite Run C's earlier 5-agent hang). The hang is likely
+    specific to step-5 subagent context size, not to the
+    step-1 batch size.
+  - **Step-1 tool-call truncation observed only for `baseline-09`**
+    (the 3rd `task()` call in the first batch of 3 truncated).
+    Mitigation: re-issued as a dedicated 1-agent batch. The
+    truncation point depends on response length, not on agent
+    identity (Run D §5.8.7 hypothesis confirmed).
+- **Reference:** `docs/research/experiments/2026-07-15-moodle-quiz-extractor-v7.md`
+  (full bitácora with setup, roster, wall-clock timeline, outputs,
+  cost, outcome, convergent themes, defect catalog, limitations,
+  next experiments). Paper draft bumped to **v0.4** with §5.9 (Run E
+  results, 7 subsections), §6.2.6 (counter-evidence), §6.3.4
+  (21-cohort cross-pollination), §6.4 (Run E limitations), §7
+  items 5d/5e/5f (cross-domain repeat, T=1.5 gateway clamp, min
+  viable integrator), §8 extended (5-run synthesis), §9.3 Run E
+  reference.
+
 ### Added (per-subagent work directory convention)
 
 Three first-class sibling directories are now created by the orchestrator
