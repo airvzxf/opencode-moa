@@ -4,6 +4,37 @@ All notable changes to `opencode-moa` are documented here. The format is based o
 
 ## [Unreleased]
 
+### Run F — 2026-07-16 voxora-kernels v1.3 (22-agent CUDA kernel compatibility cohort)
+
+- **ID:** `voxora-kernels` — first CUDA-kernel / GPU-binary compatibility
+  prompt domain, targeting Pascal `sm_61` and the exact
+  `candle-kernels 0.9.2` graph used by Voxora.
+- **Configured cohort:** 22 agents (9 Group A baselines, 6 Group B prompt
+  injections, 6 Group C sweeps, and 1 external `propuesta-deepseek-flash`).
+  Five additional proposer agents were excluded by user instruction before
+  configuration and produced no files; they were not part of this roster.
+- **Config:** `validacion_empirica: true`, `step_5_modo: sintesis_central`,
+  `sintesis_final: true`, `param_validation_report: true`, one `/orquestar`
+  iteration. The convergence threshold was not exercised.
+- **Outcome:** 22/22 originals plus one integrated candidate. Winner:
+  `05-propuesta-integrada.md` (AP **9.4**, validator **9.7/10**, 69/70 over
+  seven sections); runner-up T15 (AP **9.2**, validator **9.5/10**, 48/60
+  over six sections). The comparable margin is **+0.2 AP**; the apparent
+  +21 total-point difference is not comparable because the integrated
+  candidate received a synthetic seventh section.
+- **Physical evidence:** three validation paths reproduced a patched
+  `sm_61` PTX target of 282,810 bytes with 0 `atom.add.f16` and 8
+  `softmax_f16` matches under `nvcc 12.9.86`. This is compile/PTX evidence,
+  not proof of end-to-end Qwen transcription.
+- **Findings:** 9 convergent themes with a maximum of 17/22 on the in-tree
+  patch approach; approximately 7 defect categories; unresolved BF16
+  runtime policy; Maxwell deferred; validator webfetch timeout mitigated by
+  local-only validation but not fixed at SDK/provider level.
+- **Documentation:** full bitácora in
+  `docs/research/experiments/2026-07-16-voxora-kernels-v8.md`; paper draft
+  bumped to **v0.5** with §5.10, §6.2.7, §6.3.5, Run F limitations,
+  future-work items 5j–5o, §8, and §9.4.
+
 ### Run E — 2026-07-15 moodle-quiz-extractor v1.3 (21-agent Firefox WebExtension cohort)
 
 - **ID:** `moodle-quiz-extractor` — **first non-Rust prompt domain**

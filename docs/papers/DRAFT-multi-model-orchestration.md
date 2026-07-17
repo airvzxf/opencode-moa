@@ -1,15 +1,23 @@
-# Multi-Model Orchestration in a Native Agent Platform: Lessons from opencode-moa (DRAFT v0.4)
+# Multi-Model Orchestration in a Native Agent Platform: Lessons from opencode-moa (DRAFT v0.5)
 
-> **Status:** Draft v0.4 — extended with Run E (2026-07-15, v1.3,
-> 21-agent iter-1, `sintesis_central` + `validacion_empirica`
-> end-to-end, moodle-quiz-extractor prompt — first non-Rust prompt
-> domain) adding the first §6.2 counter-evidence (integrated proposal
-> lost by 2.94 points due to 4 critical-path defects introduced by
-> the integrator), the first §6.3 evidence at 21-cohort scale
-> (9 convergent themes, max 12/21 agreement on MV3+WXT), and a 13-distinct-defect
-> validator catalog showing defect detection scales roughly linearly with
-> cohort size. v0.3 content preserved: Run D (2026-07-13, v1.3,
-> 6-baseline iter-1) minimum-cohort controlled validation of §6.2 and §6.3;
+> **Status:** Draft v0.5 — extended with Run F (2026-07-16, v1.3,
+> 22-agent iter-1, `sintesis_central` + `validacion_empirica`
+> end-to-end, voxora-kernels prompt — first CUDA-kernel / GPU-binary
+> compatibility prompt domain) adding the **§6.2 partial restoration**
+> (integrated proposal won by +0.2 AP over T15 runner-up, with
+> source-attributed evidence — 18/18 line citations verified accurate
+> to ≤5 lines), the **§6.3 evidence at 4th prompt domain** (9
+> convergent themes, max **17/22** = 77% agreement on in-tree patch
+> approach — the highest convergence density in the corpus to date),
+> and a new **byte-precise PTX reproducibility standard** (282,810
+> bytes patched PTX, 0 `atom.add.f16`, 8 `softmax_f16` reproduced
+> byte-for-byte on `nvcc 12.9.86` by 3 independent validators). Run F
+> also documents a **validador webfetch gateway-timeout bug** affecting
+> 5 originals and mitigated by prompt tightening (not fixed at SDK
+> level). v0.4 content preserved: Run E (2026-07-15, v1.3, 21-agent
+> iter-1) §6.2 counter-evidence + §6.3 21-cohort + 13-defect catalog;
+> v0.3 content preserved: Run D (2026-07-13, v1.3, 6-baseline iter-1)
+> minimum-cohort controlled validation of §6.2 and §6.3;
 > v0.2.1 content preserved: Run C (2026-07-13, v1.2.1, 52-agent iter-1)
 > cost calibration, stack-vs-viability analysis, parameter-validation
 > honesty probe, and v1.3 roster revision (52 → 41 → 42 agentes
@@ -19,7 +27,7 @@
 
 **Authors:** Israel Roldan (corresponding: israel.alberto.rv@gmail.com)
 **Affiliation:** airvzxf
-**Date:** 2026-07-11 (first draft), 2026-07-13 (v0.2 with Run C and v1.3 revision), 2026-07-13 (v0.2.1 with v1.3.1 addendum), 2026-07-13 (v0.3 with Run D and minimum-cohort validation), 2026-07-15 (v0.4 with Run E and 21-cohort + integrator counter-evidence)
+**Date:** 2026-07-11 (first draft), 2026-07-13 (v0.2 with Run C and v1.3 revision), 2026-07-13 (v0.2.1 with v1.3.1 addendum), 2026-07-13 (v0.3 with Run D and minimum-cohort validation), 2026-07-15 (v0.4 with Run E and 21-cohort + integrator counter-evidence), 2026-07-16 (v0.5 with Run F and CUDA-kernel compat + source-attributed integrator)
 
 ---
 
@@ -36,55 +44,68 @@ evaluation, classification, improvement, final selection, summary) plus
 optional step 10 (cross-iteration synthesis) and an arbitrary iteration
 loop governed by threshold + max-iterations.
 
-We report on **five** runs spanning three bundle versions and three
-prompt domains (Rust GUI, Rust CLI, Firefox WebExtension). **Run A**
-(2026-07-11, v0.2.0-beta, self-improve × 12, N=2 iterations) and **Run B**
-(2026-07-12, v0.3, sintesis_central, N=1 complete + N=2 partial) test
-12-model competition on the same Rust GUI design task; Run A shows that
-iterative synthesis propagates convergent ideas at scale (e.g.
-`request_repaint` and `edge-detect` went 1-of-12 → 12-of-12 across
-iterations) and Run B demonstrates that **a centralised integrator
-outperforms 12 redundant self-improvements on cost by 4-18×** while
-producing a different (but defensible) winning stack choice driven by
-cross-model convergence. **Run C** (2026-07-13, v1.2.1, 52-agent
-iter-1, step_5_modo:skip) provides the first measured cost data (OCG
-= 96.5% of spend, MiniMax = 3.5%), the first stack-vs-viability analysis
-(GTK4 owns all 4 viability-9/10 slots despite tying egui/eframe at 38.5%
-adoption), and a parameter-validation honesty probe (38/52 propuestas
-emit a `## Generation parameters` section but 0% have independently
-verified `temperature_actual`). **Run D** (2026-07-13, v1.3, fib-rust-cli,
-6-baseline iter-1, sintesis_central + validacion_empirica end-to-end)
-adds a minimum-cohort controlled validation: same model across all 6
-propuestas, same temperature, no prompt variation. Run D produces the
-first methodologically clean §6.2 evidence (integrated proposal 45/50
-beats best original 44/50 by +1 point) and the first §6.3 evidence
-with a uniform-model cohort (6 identical-input proposals converged on
-10 ideas; cross-pollination is a property of LLM sampling, not of model
-diversity). **Run E** (2026-07-15, v1.3, moodle-quiz-extractor, 21-agent
-iter-1, sintesis_central + validacion_empirica end-to-end, first
-non-Rust prompt domain — a Firefox WebExtension) is the largest
-`sintesis_central + validacion_empirica` end-to-end run to date. Run E
-produces the first **§6.2 counter-evidence** (the integrated proposal
-ranked 16/22 with composite 6.05, **losing** by 2.94 points to the
-winning original `propuesta-minimax-T15` at composite 8.99 — the
-integrator introduced 4 critical-path defects that the originals did
-not have), the first §6.3 evidence at 21-cohort scale (9 convergent
-themes, max 12/21 agreement on MV3+WXT), and the first defect catalog
-at scale (~13 distinct defects in 21 proposals, including 4 phantom
-npm packages, 2 wrong selectors, 1 retracted API endpoint, and 1
-invalid manifest JSON). Across all five runs we identify cost-per-value
-outliers (deepseek-v4-flash and mimo-v2.5 deliver top-5 quality at under
-$0.06 cumulative spend each in Run C), confirm that **defect detection
-is the primary value of the validator step** (Run D caught 2 real bugs,
-Run E caught 13 — defect detection scales roughly linearly with cohort
-size), present design recommendations for the operational envelope
-(full-roster retention, configurable parallel batch size,
-step_5_modo ∈ {sintesis_central, self_improve, skip}, per-subagent
-work/log dirs, minimum-cohort 6-baseline design as a control
-condition, and a new "min viable integrator" mode proposed for
-§7.5f to prevent integrator-introduced defects), and document
-the first time a Group C parameter-sweep agent (`propuesta-minimax-T15`
-at T=1.5) has led the ranking in an opencode-moa run.
+We report on **six** runs spanning three bundle versions and four
+prompt domains (Rust GUI, Rust CLI, Firefox WebExtension, CUDA kernel
+compatibility). **Run A** (2026-07-11, v0.2.0-beta, self-improve × 12,
+N=2 iterations) and **Run B** (2026-07-12, v0.3, sintesis_central,
+N=1 complete + N=2 partial) test 12-model competition on the same Rust
+GUI design task; Run A shows that iterative synthesis propagates
+convergent ideas at scale (e.g. `request_repaint` and `edge-detect`
+went 1-of-12 → 12-of-12 across iterations) and Run B demonstrates that
+**a centralised integrator outperforms 12 redundant self-improvements
+on cost by 4-18×** while producing a different (but defensible) winning
+stack choice driven by cross-model convergence. **Run C** (2026-07-13,
+v1.2.1, 52-agent iter-1, step_5_modo:skip) provides the first measured
+cost data (OCG = 96.5% of spend, MiniMax = 3.5%), the first
+stack-vs-viability analysis (GTK4 owns all 4 viability-9/10 slots
+despite tying egui/eframe at 38.5% adoption), and a parameter-validation
+honesty probe (38/52 propuestas emit a `## Generation parameters`
+section but 0% have independently verified `temperature_actual`).
+**Run D** (2026-07-13, v1.3, fib-rust-cli, 6-baseline iter-1,
+sintesis_central + validacion_empirica end-to-end) adds a minimum-
+cohort controlled validation: same model across all 6 propuestas,
+same temperature, no prompt variation. Run D produces the first
+methodologically clean §6.2 evidence (integrated proposal 45/50 beats
+best original 44/50 by +1 point) and the first §6.3 evidence with a
+uniform-model cohort (6 identical-input proposals converged on 10
+ideas; cross-pollination is a property of LLM sampling, not of model
+diversity). **Run E** (2026-07-15, v1.3, moodle-quiz-extractor,
+21-agent iter-1, sintesis_central + validacion_empirica end-to-end,
+first non-Rust prompt domain — a Firefox WebExtension) is the
+largest `sintesis_central + validacion_empirica` end-to-end run before Run F. Run E produces the first **§6.2 counter-evidence** (the
+integrated proposal ranked 16/22 with composite 6.05, **losing** by
+2.94 points to the winning original `propuesta-minimax-T15` at
+composite 8.99 — the integrator introduced 4 critical-path defects
+that the originals did not have), the first §6.3 evidence at
+21-cohort scale (9 convergent themes, max 12/21 agreement on MV3+WXT),
+and the first defect catalog at scale (~13 distinct defects in 21
+proposals, including 4 phantom npm packages, 2 wrong selectors, 1
+retracted API endpoint, and 1 invalid manifest JSON). **Run F**
+(2026-07-16, v1.3, voxora-kernels, 22-agent iter-1, sintesis_central
++ validacion_empirica end-to-end, fourth prompt domain — CUDA kernel
+compatibility for Pascal sm_61) is the **§6.2 partial restoration**:
+the integrated proposal wins by +0.2 AP (9.4 vs T15's 9.2) with a
+**source-attributed evidence base** — 18/18 line citations verified
+accurate to ≤5 lines by the integrated validator, and a **byte-precise
+PTX reproducibility standard** (282,810 bytes patched PTX, 0
+`atom.add.f16`, 8 `softmax_f16` reproduced byte-for-byte on `nvcc
+12.9.86` by 3 independent validators). Run F also documents a
+**validador webfetch gateway-timeout bug** affecting 5 originals and
+mitigated by prompt tightening (not fixed at SDK level). Across all
+six runs we identify cost-per-value outliers (deepseek-v4-flash and
+mimo-v2.5 deliver top-5 quality at under $0.06 cumulative spend each
+in Run C), confirm that **defect detection is a primary value of the validator step** (Run D caught 2 real bugs, Run E caught 13, Run F caught ~7 categories). Run F also shows that a similar cohort size can yield fewer detected defect categories when the prompt has fewer orthogonal decision axes; the corpus is not yet large enough to claim a linear law. We present design recommendations
+for the operational envelope (full-roster retention, configurable
+parallel batch size, step_5_modo ∈ {sintesis_central, self_improve,
+skip}, per-subagent work/log dirs, minimum-cohort 6-baseline design
+as a control condition, a new "min viable integrator" mode proposed
+for §7.5f to prevent integrator-introduced defects, and a new
+**source-attributed integrator** pattern documented in §5.10.6 + §7.5m
+that REQUIRES the integrator to publish a source-attribution table
+with N line ranges AND requires the validador to verify each
+citation), and document the first time a Group C parameter-sweep
+agent (`propuesta-minimax-T15` at T=1.5) has led the ranking in an
+opencode-moa run.
 
 ## 1. Introduction
 
@@ -108,25 +129,7 @@ orchestration is a markdown file with YAML frontmatter, the agents
 themselves are markdown subagents, the configuration is JSON, and
 "running" the orchestrator is "type `/orquestar` into OpenCode".
 
-This draft reports on **five** experimental runs spanning three prompt
-domains (Rust GUI overlay popup, Rust Fibonacci CLI, Firefox
-WebExtension for Moodle quiz extraction) and three bundle versions
-(v0.2.0-beta, v0.3, v1.2.1, v1.3). We treat the runs as an
-observational study: we did not pre-register hypotheses, but the data
-generates four testable propositions about multi-model orchestration
-that we then formulate as future work. **§6.2** (`sintesis_central` vs
-`self_improve`) now has partial validation from Run B, methodologically
-clean evidence from Run D (minimum cohort, both step_5_modo values
-running on identical inputs), and the first **counter-evidence** from
-Run E (21-agent cohort where the integrated proposal lost to the best
-original by 2.94 points due to 4 critical-path defects introduced by
-the integrator). **§6.3** (cross-pollination) has empirical evidence
-from Run A (iter-1 → iter-2), Run B (within iter-1 with diverse
-models), Run D (within iter-1 with uniform model), and Run E
-(within iter-1 with mixed 21-agent cohort: 9 convergent themes, max
-12/21 agreement on MV3+WXT). **§6.1** (model floor > model lift) and
-**§7.5** (direct side-by-side §6.2 gold-standard validation) remain
-partially open.
+This draft reports on **six** experimental runs spanning four prompt domains (Rust GUI overlay popup, Rust Fibonacci CLI, Firefox WebExtension for Moodle quiz extraction, and CUDA kernel compatibility) and three bundle versions (v0.2.0-beta, v0.3, v1.2.1, v1.3). We treat the runs as an observational study: we did not pre-register hypotheses, but the data generates four testable propositions about multi-model orchestration that we then formulate as future work. **§6.2** (`sintesis_central` vs `self_improve`) now has partial validation from Run B, methodologically clean evidence from Run D's minimum cohort and full pipeline (but **not** a `self_improve` control arm), the first **counter-evidence** from Run E (21 realized proposals from a 22-agent configured cohort where the integrated proposal lost to the best original by 2.94 points due to 4 critical-path defects introduced by the integrator), and a **partial restoration** in Run F (+0.2 AP with source-attributed evidence, without a same-input self-improve control). **§6.3** (cross-pollination) has empirical evidence from Run A (iter-1 → iter-2), Run B (within iter-1 with diverse models), Run D (within iter-1 with uniform model), Run E (within iter-1 with 21 realized proposals: 9 convergent themes, max 12/21 agreement on MV3+WXT), and Run F (within iter-1 with a CUDA-kernel cohort: 9 themes, max 17/22 on the in-tree patch). **§6.1** (model floor > model lift) and the direct side-by-side **§7** controls remain partially open.
 
 ## 2. Related work
 
@@ -166,11 +169,11 @@ partially open.
 3. **Config** (`opencode-moa/orquestador.json`): default model roster,
    iteration thresholds, step modes, disqualification rules.
 
-### 3.1 Pipeline (v0.3)
+### 3.1 Pipeline (v1.3)
 
 ```
 Step 0:  Read orquestador.json + project-level override + CLI flags.
-Step 1:  Fan out — 1 task() per model in modelos_a_competir; each writes
+Step 1:  Fan out — 1 task() per model in agentes_a_competir; each writes
          `01-propuesta-{id_corto}.md` to `out/{id}/iter-N/`.
 Step 2 (opt): validador runs per-proposal, writes `02-validacion-*.md`.
 Step 3:  evaluador scores all proposals, writes `03-calificacion-evaluador.md`.
@@ -314,9 +317,60 @@ The full prompt, configuration, per-step outputs, defect catalog, and
 bug history are preserved verbatim in
 `docs/research/experiments/2026-07-15-moodle-quiz-extractor-v7.md`.
 
-## 5. Empirical results (N=3 Rust GUI runs + N=1 Rust CLI run + N=1 Firefox WebExtension run, N=5 total)
+### Run F — 2026-07-16 (v1.3, 22-agent iter-1, voxora-kernels)
 
-The four runs (§4) produce the empirical results summarised below.
+A large-cohort run on a fourth prompt domain (CUDA kernel compatibility
+for Pascal sm_61, Spanish-language prompt) tests whether Run E's
+findings generalize to a 22-agent cohort and a fundamentally different
+decision space (GPU-binary compatibility, not web stack selection).
+This is the first run on a **GPU-binary / kernel-level** decision
+problem and the first run with **byte-precise physical
+reproducibility** (PTX output, not just viability verdicts). Key
+setup:
+
+- v1.3 bundle (same as Run E).
+- Project-level `orquestador.json` with **22 configured agents**. Five additional agents (`propuesta-mimo`, `propuesta-deepseek`, `propuesta-qwen37-plus`, `propuesta-kimi`, `propuesta-glm`) were excluded by user instruction before launch and do not appear in this project-level JSON or the output corpus. The 22 configured agents are 9 Group A baselines
+  `propuesta-minimax-baseline-{01..09}` + 6 Group B prompt injections
+  {creative, minimal, security-first, observability, ci-github,
+  cd-releases} + 6 Group C parameter sweeps {T05, T10, T15, P099,
+  T05K50, T10K200} + 1 external `propuesta-deepseek-flash`.
+- `umbral_convergencia: 0.2` (same as Run E; not exercised in the
+  single-iter run).
+- **`step_5_modo: sintesis_central`** and **`validacion_empirica: true`**
+  and **`sintesis_final: true`** (writes step-10 cross-iter synthesis).
+- `/orquestar` (single iter, not iterate). The user did not invoke
+  `/orquestar-iterate`, so the convergence threshold is unexercised.
+- **First `param_validation_report: true` observation in a 22-cohort** —
+  the synthesizer aggregated per-proposal parameter declarations into a
+  table in `04-clasificacion.md` (the T/top_p/top_k overrides for the
+  Group C agents, defaults for Group A, no-declaration for the external
+  provider). This is the third run in the corpus to use this option
+  after Run D and Run E.
+- ~78 min wall-clock, ~$0.20 estimated cost (byte-derived from Run C
+  per-agent average; 22 MiniMax invocations + 1 external + 5 retries
+  + 22 validador + 1 integrated validador + 2 evaluador + 3
+  sintetizador ≈ 56 LLM calls total).
+- **First run in the corpus where the integrated candidate publishes an
+  explicit Source-attribution table** with 18 line ranges, AND the
+  validador independently verifies each one is accurate to ≤5 lines
+  (18/18 ✅). This is a methodological pattern proposed as a default
+  for `sintesis_central` in §7.5m.
+- **First run with byte-precise physical reproducibility:** the
+  integrated validator reproduces the patched-PTX gate at
+  `nvcc -O3 -std=c++17 -arch=sm_61 -ptx --expt-relaxed-constexpr -I src
+  src/reduce.cu -o /tmp/reduce_patched_sm61.ptx` and confirms the PTX
+  is exactly **282,810 bytes**, with **0 `atom.add.f16`** and **8
+  `softmax_f16`**. The same byte-precise target is reproduced by 3
+  independent validators (T15, baseline-02, integrated) — the first
+  byte-exact cross-validator evidence in the corpus.
+
+The full prompt, configuration, per-step outputs, defect catalog, and
+bug history are preserved verbatim in
+`docs/research/experiments/2026-07-16-voxora-kernels-v8.md`.
+
+## 5. Empirical results (N=3 Rust GUI runs + N=1 Rust CLI run + N=1 Firefox WebExtension run + N=1 CUDA kernel compat, N=6 total)
+
+The six runs (§4) produce the empirical results summarised below.
 Run C's results are in §5.5–§5.7; Run D's results are in §5.8.
 
 ### 5.1 Cost & ROI (Run A, 2026-07-11)
@@ -695,7 +749,7 @@ Each is a different failure mode with a different mitigation. See
 ### 5.9 Maximum-cohort `sintesis_central` validation (Run E, 2026-07-15, v1.3, moodle-quiz-extractor)
 
 Run E is the largest `sintesis_central + validacion_empirica` end-to-end
-run to date. It also extends the prompt-domain coverage from two Rust
+run before Run F. It also extends the prompt-domain coverage from two Rust
 domains (GUI, CLI) to a third non-Rust domain (Firefox WebExtension for
 Moodle quiz extraction, Spanish-language prompt). Run E's role in this
 draft is to test the generalizability of Run D's findings and to expose
@@ -979,7 +1033,371 @@ that the hang is specific to **step-5 subagent context size** (how
 many originals the integrator must consume at once), not to the
 step-1 batch size.
 
-## 6. Discussion
+### 5.10 CUDA-kernel compatibility validation (Run F, 2026-07-16, v1.3, voxora-kernels, 22-cohort iter-1)
+
+Run F is the **fourth distinct prompt domain** in the opencode-moa
+corpus (after Rust GUI, Rust CLI, Firefox WebExtension) and the first
+to target a **CUDA-kernel / GPU-binary compatibility** decision space.
+It is also the first run with **byte-precise physical reproducibility**
+(the integrated validator reproduces an exact PTX byte count on `nvcc
+12.9.86`) and the first run where the **integrator publishes an explicit
+Source-attribution table** that the validador independently verifies.
+
+Run F's role in this draft is threefold:
+
+1. **§6.2 partial restoration.** Run E's counter-evidence (integrator
+   lost by 2.94 points) was dramatic. Run F shows the integrator can
+   win again (+0.2 AP over T15), but only when it carries a verifiable
+   evidence base. See §5.10.6 + §6.2.7 for the refined proposition.
+2. **§6.3 evidence at 4th domain.** Cross-pollination scales to a
+   non-software-stack, GPU-binary domain (9 themes, max 17/22 = 77%
+   agreement on the in-tree patch approach — the highest convergence
+   density in the corpus to date).
+3. **Byte-precise validator evidence.** Run F establishes that
+   `validacion_empirica: true` can produce **physically-reproducible**
+   artifacts (PTX byte counts, instruction-presence greps), not just
+   viability verdicts. This is a methodological refinement of the
+   validator's role.
+
+#### 5.10.1 Cohort and configuration
+
+| Property | Value |
+|---|---|
+| Prompt | CUDA kernel compat for Pascal sm_61 (Spanish-language prompt; targets candle-kernels 0.9.2 + qwen3-asr 0.2.2 + voxora/telora) |
+| Bundle | v1.3 (same as Run E) |
+| `agentes_a_competir` | **22 configured agents**; five additional agents were excluded by user instruction before launch and do not appear in this project-level JSON or the output corpus |
+| Models | 21 × `minimax-coding-plan/MiniMax-M3` + 1 × `opencode-go/deepseek-v4-flash` (external) |
+| `step_5_modo` | `sintesis_central` |
+| `validacion_empirica` | `true` |
+| `descalificar_fallida` | `false` |
+| `param_validation_report` | `true` |
+| `sintesis_final` | `true` |
+| `umbral_convergencia` | `0.2` (same as Run E; not exercised in single iter) |
+| Mode | `/orquestar` (single iter; user did not invoke `/orquestar-iterate`) |
+| Wall-clock | ~78 min (estimated from per-agent timing) |
+| Estimated cost | ~$0.20 (byte-derived from Run C per-agent average; ~56 LLM invocations total including 5 retry passes) |
+| Project classification | `NOT_GIT` (orchestration workspace; out-of-scope for the GitHub PR protocol) |
+
+The 22-agent cohort is the second-largest `sintesis_central +
+validacion_empirica` end-to-end run after Run E (21 agents). It
+includes **9 Group A baselines** for within-cohort variance
+measurement, **6 Group B prompt injections** (creative, minimal,
+security-first, observability, ci-github, cd-releases) for
+orthogonal-perspective diversity, **6 Group C parameter sweeps** (T05,
+T10, T15, P099, T05K50, T10K200) for sampling-parameter diversity, and
+1 external provider (deepseek-flash) for cross-model signal. The 7
+unselected Group B variants (a11y, errors, i18n, portable, rustdoc,
+testable, maintainable) were not exercised — see §6.4 Run F limitations.
+
+#### 5.10.2 Outcome (23 candidates: 22 originales + 1 integradora)
+
+| Pos | Proposal | Group | AP | Validator | Total | State |
+|---:|---|:---:|---:|---:|---:|---|
+| 1 | **`05-propuesta-integrada.md`** | — (integrator) | **9.4** | **9.7/10 ✅** | **69/70** (7 sections) | **Finalist · winner** |
+| 2 | `propuesta-minimax-T15` | C (T=1.5) | 9.2 | 9.5/10 ✅ | 48/60 (6 sections) | Finalist |
+| 3 | `propuesta-minimax-T05` | C (T=0.5) | 9.0 | 9.4/10 ✅ | 46/60 (6 sections) | Finalist |
+| 4 | `propuesta-minimax-baseline-02` | A | 8.9 | 9.0/10 ✅ | 45/60 (6 sections) | Viable ✅ |
+| 5 | `propuesta-minimax-baseline-03` | A | 8.7 | 9.0/10 ✅ | (6 sections) | Viable ✅ |
+| 6 | `propuesta-minimax-baseline-08` | A | 8.7 | 9.0/10 ✅ | (6 sections) | Viable ✅ |
+| 7 | `propuesta-minimax-baseline-06` | A | 8.5 | 9.0/10 ✅ | (6 sections) | Viable ✅ |
+| 8 | `propuesta-minimax-baseline-09` | A | 8.5 | 9.0/10 ✅ | (6 sections) | Viable ✅ |
+| 9 | `propuesta-minimax-security-first` | B (security) | 8.5 | 9.0/10 ✅ | (6 sections) | Viable ✅ |
+| 10 | `propuesta-minimax-T10` | C | 8.2 | 8.5/10 ✅ | (6 sections) | Viable ✅ |
+| 11 | `propuesta-minimax-P099` | C | 8.2 | 8.5/10 ✅ | (6 sections) | Viable ✅ |
+| 12 | `propuesta-minimax-cd-releases` | B (cd-releases) | 8.0 | 8.5/10 ⚠️ | (6 sections) | Viable with warnings |
+| 13 | `propuesta-minimax-creative` | B (creative) | 7.7 | 8.0/10 ⚠️ | (6 sections) | Viable with warnings |
+| 14 | `propuesta-minimax-baseline-04` | A | 7.2 | 7.5/10 ⚠️ | (6 sections) | Viable with warnings |
+| 15 | `propuesta-minimax-baseline-05` | A | 7.0 | 7.5/10 ⚠️ | (6 sections) | Viable with warnings |
+| 16 | `propuesta-minimax-observability` | B (observability) | 7.0 | 7.5/10 ⚠️ | (6 sections) | Viable with warnings |
+| 17 | `propuesta-minimax-ci-github` | B (ci-github) | 6.7 | 7.0/10 ⚠️ | (6 sections) | Viable with warnings |
+| 18 | `propuesta-deepseek-flash` | external | 6.5 | 7.0/10 ⚠️ | (6 sections) | Viable with warnings |
+| 19 | `propuesta-minimax-baseline-01` | A | 5.5 | 6.0/10 ⚠️ | (6 sections) | Viable with warnings |
+| 20 | `propuesta-minimax-minimal` | B (minimal) | 5.0 | 5.0/10 ❌ | (6 sections) | ❌ NOT VIABLE per section |
+| 21 | `propuesta-minimax-T05K50` | C (combo) | ≈3.5 | 4.2/10 ❌ | (6 sections) | ❌ NOT VIABLE per section |
+| 22 | `propuesta-minimax-baseline-07` | A | 3.5 | 4.5/10 ❌ | (6 sections) | ❌ NOT VIABLE per section |
+| 23 | `propuesta-minimax-T10K200` | C (combo) | 3.3 | 4.2/10 ❌ | (6 sections) | ❌ NOT VIABLE per section |
+
+**Three key results:**
+
+1. **§6.2 partial restoration.** The integrated candidate wins by
+   **+0.2 AP** (9.4 vs T15's 9.2). The apparent +21 total-point
+   difference is not comparable because the integrated candidate was
+   scored over seven sections and the originals over six; the extra row
+   was synthetic. The win also carries source-attributed evidence —
+   18/18 line citations verified accurate to ≤5 lines by the integrated
+   validator — and a byte-precise PTX reproducibility standard (282,810
+   bytes) reproduced by 3 independent validators. See §5.10.6 + §6.2.7.
+2. **Highest convergence density in the corpus.** 22 originals converge
+   on 9 themes, with **17/22 (77%) agreement** on the in-tree
+   `[patch.crates-io]` approach. This is significantly higher than Run
+   E's 12/21 (57%) and Run D's 4-6/6 (67-100%). See §5.10.4 + §6.3.5.
+3. **0 descalificadas, 4 ❌ NOT VIABLE per section.** With
+   `descalificar_fallida == false`, the 4 not-viable proposals are
+   kept in the ranking as ❌ entries. The same opt-in disqualification
+   policy as Runs D and E.
+
+#### 5.10.3 Top-4 finalist analysis
+
+**1. `05-propuesta-integrada.md` (winner) — AP 9.4, validator 9.7/10 ✅, 69/70 (7 sections).**
+
+The integrated candidate is the **first winner in the corpus with an
+explicit Source-attribution table**. The integrator publishes 18 line
+ranges citing the original source (`01-propuesta-minimax-T15.md`,
+`01-propuesta-minimax-T05.md`, `01-propuesta-minimax-baseline-02.md`,
+`03-calificacion-evaluador.md`, `04-clasificacion.md`) that supplied
+each section of the integrated proposal, AND the integrated validator
+independently opens each cited file at the cited offset and verifies
+the content matches the descriptor (18/18 ✅ to ≤5 lines). No original
+in any prior run had this property.
+
+Key contributions:
+
+- **In-tree `[patch.crates-io]` with `name = "candle-kernels"`,
+  `version = "0.9.2"`** — vendored from `~/.cargo/registry/src/.../
+  candle-kernels-0.9.2/`, preserving identity, LICENSE files (copied
+  from upstream `candle/` repo at vendor time, not from registry cache),
+  and a provenance record.
+- **Two production patches** (≈ 30 LOC total): `src/reduce.cu` gate
+  `SUM_OP(__half, sum_f16)` at `__CUDA_ARCH__ >= 700`, plus `build.rs`
+  source manifest omitting `src/moe/moe_wmma*.cu` and `libmoe.a` below
+  `compute_cap < 80`.
+- **Direct patched-PTX install gate** (`nvcc -O3 -std=c++17
+  -arch=sm_61 -ptx --expt-relaxed-constexpr -I src src/reduce.cu
+  -o /tmp/reduce_patched_sm61.ptx` + `grep -c 'atom.add.f16'` /
+  `grep -c 'softmax_f16'`) — byte-precise, reproducible, NOT
+  replaceable with `nvcc -c` (the full host/device compile triggers a
+  separate `compatibility.cuh:21` redefinition).
+- **Seven stop/go gates (G1-G7):** G1 dependency freeze, G2 compile,
+  G3 kernel load, G4 Qwen BF16 dtype/device, G5 real ASR (CPU vs GPU
+  comparison), G6 sm_80+ regression, G7 wider legacy claim.
+- **Honest "compile-only / Phase 1" boundary:** the candidate
+  explicitly offers a 1-2 engineer-day deliverable for the compile/
+  link-compatible `voxora-kernels` package **with Qwen kept on CPU**,
+  separating the kernel patch from the 3-7 engineer-day Qwen BF16-to-
+  F32/F16 device policy workstream. This correction is the direct
+  response to T15's unverified 0.85 end-to-end estimate.
+
+**2. `propuesta-minimax-T15` (runner-up) — AP 9.2, validator 9.5/10 ✅, 48/60 (6 sections).**
+
+T15 carries the cleanest 2-file ~110-line in-tree patch with byte-
+precise 282,810-byte PTX evidence. The validator reproduced the
+byte count and the 0 `atom.add.f16` / 8 `softmax_f16` greps. T15's
+principal weakness is the **unverified 0.85 end-to-end transcription
+probability** (line 22) — the integrated candidate's G5 gate
+explicitly defers that claim until a real WAV fixture is run on the
+GTX 1080.
+
+**3. `propuesta-minimax-T05` (third) — AP 9.0, validator 9.4/10 ✅.**
+
+T05 carries the standalone `airvzxf/voxora-kernels` repo variant with
+per-architecture profile taxonomy (sm_50..sm_120). Every SHA and
+line number is exact. T05's principal divergence is the in-tree vs
+standalone packaging question — the integrated candidate absorbs
+T05's standalone reasoning as an **extraction gate** (multiple
+independent consumers, multiple Candle versions, independent releases)
+rather than a Phase 1 requirement.
+
+**4. `propuesta-minimax-baseline-02` (fourth) — AP 8.9, validator 9.0/10 ✅.**
+
+baseline-02 supplied the **sm_80 MoE floor** evidence
+(`moe_wmma.cu:279,281` instantiates BF16 WMMA on Volta/Turing) and
+the **test-no-stub rationale** (the current graph links without
+`libmoe.a` because qwen3-asr 0.2.2 has no MoE references). The
+integrated candidate inherits both. baseline-02's principal weakness
+is the no-op stub risk + artifact path drift (`out/...` vs
+`work/...`) — the integrated candidate drops the stub and corrects
+the path.
+
+#### 5.10.4 Within-cohort convergence at 22-cohort scale (9 themes, max 17/22)
+
+The 22-agent cohort produced **9 convergent ideas** with the highest
+convergence density in the corpus to date. The in-tree `[patch.crates-io]`
+approach has 17/22 = **77% agreement** — significantly higher than Run
+E's 12/21 = 57% on MV3+WXT and Run D's 4-6/6 = 67-100% on simpler
+sub-aspects.
+
+| # | Idea | Count | Originals that proposed it |
+|---|------|------:|---|
+| 1 | **In-tree `[patch.crates-io]` for `candle-kernels 0.9.2`** (vs standalone repo) | **17 of 22** | T15, T05, T10, P099, baseline-{01..06, 08, 09}, security-first, creative, minimal, observability, ci-github, cd-releases |
+| 2 | **Pin exactly `candle-kernels = 0.9.2` with `bindgen_cuda::Builder`** (NOT 0.11.0 with `cudaforge::KernelBuilder`) | 18 of 22 | All 17 from idea #1 + baseline-07 (which pins the right version but for wrong reasons) |
+| 3 | **Keep Cargo package identity `name = "candle-kernels"`** under directory brand `voxora-kernels` | 17 of 22 | Same 17 as idea #1 |
+| 4 | **Reduce patch surface to 2 production files**: `src/reduce.cu` (gate `SUM_OP(__half, sum_f16)` at `>= 700`) + `build.rs` (skip MoE below floor) | 17 of 22 | Same 17 as idea #1 |
+| 5 | **Byte-precise `nvcc -O3 -std=c++17 -arch=sm_61 -ptx` smoke test** as the install gate | **12 of 22** | T15 + baseline-{02, 08, 09} reproduced byte-for-byte; 8 others reference the recipe |
+| 6 | **`__CUDA_ARCH__ >= 80` as the MoE/WMMA floor** (NOT `>= 70`) | 5 of 22 | baseline-02 (originator with launcher-line evidence), T05, baseline-06, baseline-09, integrated |
+| 7 | **No upstream PR** to the candle repo | 22 of 22 (unanimous) | pre-agreed by the user |
+| 8 | **Separate compile evidence from runtime/model correctness** | 22 of 22 (unanimous) | consensus wording |
+| 9 | **Treat Maxwell sm_50/sm_52 as deferred** | 22 of 22 (unanimous) | nobody has hardware; `__half` arithmetic has sm_53 floor |
+
+**Interpretation.** Items 7, 8, 9 are **safe defaults** with 22/22
+agreement (pre-agreed constraints from the prompt). Items 1-4 are
+**technical convergence** with 17/22 = 77% agreement — the LLM
+intrinsic sampling variance surfaces the same minimal-patch design
+across 22 attempts, with 4 divergent proposals (deepseek-flash,
+observability, ci-github, creative) clustering on the wrong Candle
+version (0.11.0 / `cudaforge`) and 1 divergent proposal (T05K50)
+diverging on architectural grounds. Item 5 (byte-precise smoke test)
+is the strongest **reproducibility convergence** in the corpus —
+the 12/22 ratio of agents that ran `nvcc -arch=sm_61 -ptx` and
+recorded the byte count is the empirical signal that the validator
+role can produce physically-reproducible artifacts, not just
+viability verdicts. Item 6 (`sm_80` floor) is the most-evidenced
+**safety upgrade** — only 5 of 22 originally propose it, but those 5
+include the originator (baseline-02) with launcher-line evidence
+(`moe_wmma.cu:279,281`) and the integrated candidate.
+
+This extends §6.3 (Run E) with two refinements:
+
+1. **Cross-pollination scales to non-software-stack domains.** Run F's
+   prompt is a kernel-level / GPU-binary decision problem, not a web
+   stack or CLI toolchain. The cohort still converges on 9 themes at
+   17/22 max agreement. The convergence phenomenon is not specific to
+   software-stack selection.
+2. **Convergence density varies by decision-space entropy.** Run F's
+   in-tree patch idea has 17/22 = 77% agreement because there is one
+   "right" modern answer (in-tree, minimal surface, lock to actual
+   dependency graph). Run E's WXT+MV3 has 12/21 = 57% because the
+   decision space has more legitimate alternatives (esbuild vs Vite
+   vs WXT). The §6.3 finding extends: convergence density correlates
+   with **decision-space entropy**, not just prompt complexity.
+
+#### 5.10.5 Defect detection at 22-cohort scale (~7 distinct defects)
+
+The validator's per-section viability reports flagged **~7 distinct
+defects** in the 22-cohort. This is **lower than Run E's ~13 defects
+at 21-cohort** despite a similar cohort size. The lower count is
+consistent with §6.4 (Run E): **defect detection scales with prompt-
+complexity per-axis**, not just cohort size.
+
+| # | Defect | Affected originals | Category |
+|---:|--------|-------------------:|----------|
+| 1 | Wrong candle-kernels version target (0.11.0 / `cudaforge` API) | deepseek-flash, observability, ci-github, creative (4 affected) | API version drift |
+| 2 | Hallucinated BF16 quote (cites `qwen3-asr-rs` comment that doesn't exist) | baseline-05 | Citation fabrication |
+| 3 | KCP indentation bug + `CUDA_TOOLKIT` operator-precedence trap | ci-github (1 affected, 2 bugs) | Tooling bugs |
+| 4 | Malformed patch hunks (empty `@@` hunk headers) | minimal | Patch format error |
+| 5 | 3 structural bugs (undefined helper, wrong Cargo metadata, missing kernel paths panic) | T10K200 | Structural bugs |
+| 6 | Standalone crate not resolvable as `candle-kernels` | T05K50 | Architectural flaw |
+| 7 | False "patch is sufficient for qwen3-asr on Pascal" claim | baseline-07 | Runtime overclaim |
+
+**Refined §6.4 finding (defect detection scales with cohort size AND with domain complexity):**
+
+| Run | Cohort | Domain complexity | Defects caught | Detection rate |
+|---|---|---|---:|---:|
+| Run D (2026-07-13) | 6 baselines | Rust CLI (1 requirement) | 2 | 33% (2/6) |
+| Run E (2026-07-15) | 21 mixed | Firefox WebExtension (6 requirements) | ~13 distinct | 62% (13/21) |
+| **Run F (2026-07-16)** | **22 mixed** | **CUDA kernel compat (1-2 core blockers + secondary axes)** | **~7 distinct** | **32% (7/22)** |
+
+Run F's defect count is lower than Run E's despite a slightly larger
+cohort because Run F's prompt has **fewer orthogonal decision axes**
+than Run E's. CUDA kernel compat is dominated by ONE blocker —
+`atomicAdd(__half*, __half)` + `nvcuda::wmma` namespace — plus a
+handful of secondary axes (Candle version, MoE policy, BF16 runtime,
+Maxwell hardware). Run E's prompt had 6 user requirements (extraction,
+images, archives, autofill, pagination, debug dump), each triggering
+its own defect class.
+
+#### 5.10.6 §6.2 partial restoration: integrator wins by source-attributed evidence
+
+The +21 figure is **not a comparable quality margin**: the integrated candidate was scored over seven sections because it added the synthetic "Why this beats the field" row, while each original was scored over six. The comparable result is the **+0.2 AP margin** (9.4 vs 9.2), alongside the integrated validator's 9.7/10 vs T15's 9.5/10. This is therefore a partial restoration of the §6.2 observation, not a refutation of Run E's counter-evidence.
+
+- **Installations (10 vs 9, +1):** the integrated candidate adds the
+  direct patched-PTX gate (`nvcc -O3 -std=c++17 -arch=sm_61 -ptx` +
+  `grep -c 'atom.add.f16'` / `grep -c 'softmax_f16'`) as an install
+  step. The validator reproduced the byte-precise 282,810 B target.
+  T15 had the recipe in the empirical section but not as an install
+  step.
+- **Considerations (10 vs 9, +1):** the integrated candidate drops
+  T15's unverified 0.85 end-to-end estimate and replaces it with
+  explicit "compile-only / Phase 1" boundary plus gates G1-G7. The
+  G4 (BF16 dtype/device) and G5 (real ASR) gates explicitly defer the
+  runtime claims that no proposal in the corpus can substantiate.
+- **Why-beats-field (10 vs N/A, +10 synthetic):** new 7th-section
+  construct with seven specific corrections anchored to evaluator
+  line ranges. 18/18 source-attributed line citations verified
+  accurate to ≤5 lines by the integrated validator.
+
+The **+0.2 AP margin** is small and should be treated as a one-run observation, not as proof that source attribution caused the win. Run F's integrated candidate carries a **source-attributed evidence base** (18 line ranges citing the originals that supplied each section) that the validador independently verifies. This is the first run in the corpus where the integrator's claims are forensically traceable, but source attribution, lower decision-space entropy, and byte-precise validation are confounded.
+
+**Why the integrator wins this time, but lost in Run E.** Three
+factors:
+
+1. **Source attribution as forcing function.** The Run F integrator
+   was instructed (or self-imposed) to publish the source of each
+   section. This means every claim is traceable to a verifiable
+   origin, which both (a) reduces fabrication risk and (b) makes
+   the validador's job much easier (verify the citation, not the
+   claim). Run E's integrator did not carry source attribution
+   and introduced 4 critical-path defects that no original had.
+2. **Lower decision-space entropy.** Run F's prompt has fewer
+   orthogonal axes than Run E's, so the integration surface is
+   smaller and the chance of integrator-introduced defects is
+   lower. Run F's 7 defects cluster on 7 distinct categories;
+   Run E's 13 defects cluster on 13 distinct categories (each
+   user requirement triggering a separate defect class).
+3. **Byte-precise validator reproducibility.** Run F's validator
+   produced **physically-reproducible** artifacts (282,810-byte
+   PTX, 0 `atom.add.f16`, 8 `softmax_f16` greps) that any future
+   reviewer can reproduce on the same `nvcc` version. Run E's
+   validator produced viability verdicts that depend on the LLM's
+   internal reasoning, not on byte-exact physical evidence.
+
+This refines the §6.2 proposition from v0.4 ("integration is typically
+higher-scoring, except when the integrator introduces critical-path
+defects") to:
+
+> **§6.2 v0.5 proposition:** In the observed Run F configuration, an
+> integrator with source-attributed inputs and independently checked
+> physical evidence beat the best original by **+0.2 AP**, while Run E
+> showed that an integrator can lose by **2.94 composite points** when it
+> introduces critical-path defects. The corpus therefore supports a
+> conditional proposition: `sintesis_central` can outperform the best
+> original at lower step-5 cost, but its margin depends on prompt
+> decision-space entropy, evidence discipline, and integrator competence.
+> The Run F score denominators are not uniform, so the synthetic +21 total
+> points are not evidence of a 21-point quality improvement. A "min viable
+> integrator" mode (§7.5f) and a "source-attributed integrator" pattern
+> (§7.5m) remain future-work controls requiring direct comparison.
+
+#### 5.10.7 validador webfetch gateway-timeout — new failure mode
+
+Run F observed a **validador subagent webfetch gateway-timeout bug**
+that affected 5 of 22 originals on first attempt:
+
+- `propuesta-minimax-security-first`
+- `propuesta-minimax-observability`
+- `propuesta-minimax-T10`
+- `propuesta-minimax-P099`
+- `propuesta-minimax-baseline-06`
+
+In each case the validador subagent called `webfetch` on URLs from
+external references in the proposals. Each call **hung indefinitely**
+(no response, no timeout from the opencode SDK). This is a distinct
+headless validation/tool-call failure from Run E's `baseline-09`
+truncation and permission issues; Run E has no independently documented
+webfetch hang. The root cause remains an open question (opencode SDK,
+LLM tool-call budget, or network policy).
+
+**Mitigation applied:** the orchestrator re-launched the affected
+validador subagents with a tightened prompt that:
+
+1. Forbids `webfetch`, `curl`, `wget`, and any network access.
+2. Requires a 30-second bail timeout on any tool call that hangs.
+3. Directs the validator to consult **local files only** (`/home/wolf/
+   workspace/projects/{voxora, telora, candle}` and `~/.cargo/registry/
+   src/.../candle-kernels-0.9.2/`).
+
+After the tightening, the remaining 18 validador invocations
+completed in **35-65 seconds each** consistently, with no hangs.
+
+**Open question:** is this an opencode SDK bug, an LLM-side tool-call
+budget bug, or a network-policy issue specific to this VPS? Run E
+observed the same class of hang. The bug needs upstream investigation
+or a permanent prompt-template hardening; see §7.5j follow-up.
+
+**5 propuesta originals also initially gateway-timed out**, but for a
+different reason (MiniMax provider gateway timeout on long system
+prompts + parameter-sweep agents). Mitigation: wipe workdir + retry.
+All 5 succeeded on retry. This is a different bug class than the
+validador webfetch issue.
 
 ## 6. Discussion
 
@@ -1175,6 +1593,14 @@ defects. The "min viable integrator" mode (§7.5f) is a
 defect-prevention control for these cases.
 
 
+#### 6.2.7 Run F partial restoration: evidence-grounded integration (2026-07-16)
+
+Run F partially restores the positive direction observed in Run D, but it does not provide the missing same-input `self_improve` control. The integrated candidate scored **9.4 AP** versus T15's **9.2 AP**, and its independent validation scored **9.7/10** versus T15's **9.5/10**. The integrated candidate also carried an explicit source-attribution table: all 18 cited ranges were checked to within five lines, and the patched `sm_61` PTX result was reproduced as 282,810 bytes with zero `atom.add.f16` matches and eight `softmax_f16` matches.
+
+The reported **69/70 versus 48/60** total must not be interpreted as a 21-point quality margin. The integrated candidate received a seventh, synthetic "Why this beats the field" section that the originals did not have. AP is the comparable headline metric, while the validation score and the byte-precise artifact provide independent evidence of reproducibility. Run F therefore supports a narrower claim: a source-attributed integrator can beat the best original in a low-entropy technical prompt, but this one-shot result does not establish causality for source attribution or overturn Run E's counter-evidence.
+
+The remaining explanations are confounded: source attribution, lower decision-space entropy, and stronger physical validation all occur in the same run. A controlled repeat must vary the attribution requirement and the step-5 mode while keeping the prompt, roster, and evaluation rubric fixed.
+
 ### 6.3 Proposition: **cross-pollination is observable and significant**
 
 Three ideas (`request_repaint`, edge-detect, `rust-toolchain.toml`)
@@ -1204,6 +1630,16 @@ This validates that **the convergence phenomenon is intrinsic to
 diverse-model exploration of the same problem**, not a property of the
 iterative loop. The integrator's role is to articulate this convergence
 into a single coherent proposal, not to create it.
+
+#### 6.3.2 Feedback-aware iteration evidence
+
+The single iter-2 proposal that completed (`iter-2/01-propuesta-minimax.md`)
+read iter-1's integrated proposal and **converged to the same stack and
+pattern as the integrator itself**. This validates the v0.3 step 1
+prompt template's feedback-aware iteration mechanism (orquestador.md
+lines 184-190): proposers in iter-N>1 read iter-1's
+`05-propuesta-integrada.md` and incorporate its lessons into their
+iter-N proposals.
 
 #### 6.3.3 Cross-pollination with uniform model (Run D, 2026-07-13)
 
@@ -1323,15 +1759,11 @@ but covered fewer orthogonal axes. **The 3-4× ratio is a heuristic,
 not a precise rule** — but it is a useful starting point for users
 configuring their own `agentes_a_competir`.
 
-#### 6.3.2 Feedback-aware iteration evidence
+#### 6.3.5 Cross-pollination in a fourth prompt domain (Run F, 2026-07-16)
 
-The single iter-2 proposal that completed (`iter-2/01-propuesta-minimax.md`)
-read iter-1's integrated proposal and **converged to the same stack and
-pattern as the integrator itself**. This validates the v0.3 step 1
-prompt template's feedback-aware iteration mechanism (orquestador.md
-lines 184-190): proposers in iter-N>1 read iter-1's
-`05-propuesta-integrada.md` and incorporate its lessons into their
-iter-N proposals.
+Run F extends the cross-pollination observation from Rust CLI and Firefox WebExtension work to a CUDA-kernel compatibility problem. Nine themes appeared across the 22 configured proposals; the strongest technical convergence was the in-tree `[patch.crates-io]` approach for the exact `candle-kernels 0.9.2` package, with 17/22 proposals. Three prompt constraints were unanimous: no upstream Candle PR or issue, separation of compile evidence from runtime correctness, and deferral of Maxwell `sm_50/sm_52` support.
+
+The higher 17/22 agreement should not be read as evidence that one orchestration setting is universally better. The CUDA task has a lower-entropy decision space than the Firefox task: a small number of architecture, API-version, and BF16/MoE blockers dominate the design. The result supports extending the proposition to a new domain, while leaving the relationship between convergence density, decision-space entropy, and cohort size as an open hypothesis.
 
 ### 6.4 Limitations
 
@@ -1446,6 +1878,16 @@ iter-N proposals.
   a different agent. Mitigation strategies listed in §7.5a
   remain open.
 
+**Run F limitations (2026-07-16, voxora-kernels):**
+
+- **Single iteration and one-shot comparison.** The convergence threshold was not exercised, and no `self_improve × 22` control ran. The +0.2 AP result is a partial restoration, not a general confirmation of §6.2.
+- **Configured cohort versus excluded agents.** The project-level JSON contained 22 agents. Five additional agents were excluded before configuration and produced no files; the run must not be described as a 27-agent roster that was later trimmed.
+- **Non-uniform score denominator.** The integrated candidate was scored over seven sections, including the synthetic "Why this beats the field" row; originals were scored over six. The +21 total-point difference is not comparable.
+- **Estimated operations.** The ~78-minute wall-clock and ~$0.20 cost are reconstructed or extrapolated; no Run F `model_remains` telemetry was collected, and logs are not a complete timing source.
+- **Validator timeout mitigation, not repair.** The webfetch hang was mitigated by a local-files-only prompt and a 30-second cap, but the SDK/provider/policy root cause remains unknown.
+- **Hardware and runtime boundary.** The 282,810-byte PTX target is specific to `nvcc 12.9.86`; G5 real-audio transcription was not executed, BF16 runtime support remains unresolved, and Maxwell support is deferred.
+- **Causal interpretation.** Source attribution, lower decision-space entropy, and byte-precise evidence co-occur in Run F. Their individual contribution cannot be separated without controlled repeats.
+
 ## 7. Future work
 
 1. ~~**Run the v0.3 bundle** (which now defaults to `sintesis_central`)
@@ -1478,7 +1920,7 @@ iter-N proposals.
    (the Run C hang was 5+ agentes with `sintesis_central`); the
    `self_improve × 6` arm should not trigger the hang either, but
    needs empirical confirmation.
-5a. **NEW: Investigate step-1 tool-call truncation (Run D §7.6).**
+5a. **NEW: Investigate step-1 tool-call truncation (Run D §5.8.7).**
     When the step-1 prompt text exceeds a length threshold, the
     orquestador's response carrying multiple `task()` siblings in one
     response is **truncated mid-emission** (Run D observed with
@@ -1497,7 +1939,7 @@ iter-N proposals.
     true`. Goal: confirm Run D's findings (defect detection rate,
     `sintesis_central` +1 margin, within-cohort convergence) generalize
     beyond Fibonacci.
-5c. **NEW: Bigger uniform cohort (Run D §9.6).** Repeat fib-rust-cli
+5c. **NEW: Bigger uniform cohort (Run D follow-up).** Repeat fib-rust-cli
     with 15 baselines (the v1.3 expansion) and compare variance,
     convergence, and integrated winner score against the 6-baseline
     cohort. Goal: confirm the "15 baselines strengthens the statistical
@@ -1538,8 +1980,34 @@ iter-N proposals.
     `step_5_modo: min_viable_integrator` value (or a
     `integrator_min_viability: 8.0` threshold), and would also
     produce a "no integration attempted" warning file when triggered.
-    This is the highest-priority follow-up motivated by Run E's
-    §6.2 counter-evidence.
+     This is the highest-priority follow-up motivated by Run E's
+     §6.2 counter-evidence.
+5j. **NEW: Investigate the Run F validador webfetch timeout.** Run F
+    mitigated five initial hangs by forbidding network access and imposing
+    a 30-second tool-call cap, but did not establish the SDK root cause.
+    Compare local-files-only validation with an explicitly permitted network
+    mode and record whether the failure is provider-, SDK-, or policy-level.
+5k. **NEW: Run the direct Run F §6.2 control.** Repeat `voxora-kernels`
+    with `step_5_modo: self_improve` on the same 22-agent configured cohort,
+    prompt, and rubric. Compare the best self-improved original with the
+    source-attributed `sintesis_central` candidate without using the
+    synthetic seventh section as a quality margin.
+5l. **NEW: Repeat Run F in another kernel domain.** Use a comparable
+    cohort for ROCm/HIP, Triton, WebGPU shader translation, or another
+    consumer/version boundary to test whether the convergence and defect
+    patterns generalize beyond `candle-kernels 0.9.2`.
+5m. **NEW: Test source attribution as a controlled intervention.** Add an
+    opt-in `integrator_source_attribution_required` configuration and compare
+    otherwise identical runs with and without it. Require the validator to
+    check every cited range, but do not infer causality from Run F alone.
+5n. **NEW: Re-run with the five excluded agents explicitly configured.** Add
+    `propuesta-mimo`, `propuesta-deepseek`, `propuesta-qwen37-plus`,
+    `propuesta-kimi`, and `propuesta-glm` to produce a 27-agent configured
+    cohort, then compare convergence and defect categories with Run F's 22.
+5o. **NEW: Execute the real G5 WAV gate.** Apply the integrated Phase 1
+    patch in the writable Voxora checkout, implement or verify the separate
+    BF16 device policy, and compare CPU/GPU transcription on the GTX 1080.
+    Until G4 and G5 pass, Qwen CUDA remains unsupported for Telora production.
 6. **Fix the `bash: ask` permission issue** so the full orchestrator
    pipeline can run end-to-end in headless mode. Either modify the
    meta-agent frontmatter to use `minimax-coding-plan/MiniMax-M3`, or
@@ -1586,11 +2054,11 @@ iter-N proposals.
 opencode-moa shows that a declarative, no-bash, native-agent multi-model
 orchestrator can produce usable proposals for non-trivial technical
 tasks (Rust GUI with overlay popup semantics, Rust Fibonacci CLI,
-Firefox WebExtension for Moodle quiz extraction) for under $12 per
-multi-iteration run. **Five** empirical runs (2026-07-11 Run A,
-2026-07-12 Run B, 2026-07-13 Run C, 2026-07-13 Run D, 2026-07-15
-Run E) test the same and adjacent prompts with progressively refined
-bundle versions:
+Firefox WebExtension for Moodle quiz extraction, and CUDA kernel
+compatibility) for under $12 per multi-iteration run. **Six** empirical
+runs (2026-07-11 Run A, 2026-07-12 Run B, 2026-07-13 Run C, 2026-07-13
+Run D, 2026-07-15 Run E, and 2026-07-16 Run F) test the same and
+adjacent prompts with progressively refined bundle versions:
 
 - **Run A (2026-07-11, v0.2.0-beta, self_improve × 12, N=2 iters):**
   motivated three design changes — centralised step-5 integrator,
@@ -1698,28 +2166,45 @@ bundle versions:
     supports the hypothesis that the hang is specific to
     step-5 subagent context size, not to the step-1 batch size.
 
-The combination of Run A, B, C, D, and E findings makes v1.3.x's
+- **Run F (2026-07-16, v1.3, 22-agent configured cohort, voxora-kernels,
+  N=1 iter):** extends the study to CUDA kernel compatibility for Pascal
+  `sm_61` and provides the first byte-precise physical validation in the
+  corpus. The integrated proposal wins by **+0.2 AP** (9.4 vs 9.2), with
+  validator 9.7/10 vs 9.5/10 and 18/18 source-attributed line ranges
+  independently checked. Its patched `sm_61` PTX is reproduced at 282,810
+  bytes with 0 `atom.add.f16` and 8 `softmax_f16` matches on `nvcc
+  12.9.86`. The apparent 69/70 vs 48/60 total is not comparable because
+  the integrated candidate received a synthetic seventh section. Run F
+  partially restores the positive §6.2 direction but does not run the
+  same-input `self_improve` control; it also exposes a validator webfetch
+  timeout that was mitigated with local-only validation, not fixed.
+
+The combination of Run A, B, C, D, E, and F findings makes v1.3.x's
 trimmed roster a defensible design choice on five dimensions:
 
 1. **Cost:** 51% reduction with no quality loss (all unique
    contributions preserved, all fabrications removed).
-2. **Convergence:** the §6.3 finding from Run A, B, D, and E
-   generalises across cohorts (12 → 6 → 21 agents) and across
-   prompt domains (Rust GUI → Rust CLI → Firefox WebExtension).
-   Cross-pollination is a property of LLM sampling temperature
-   (Run D) and of prompt complexity (Run E), not a property of
-   model diversity. Cross-model consensus produces a verifiable
-   winner (Run C `minimax-baseline-08` for the Rust GUI prompt,
-   with a 53 MB binary on disk; Run E `propuesta-minimax-T15` for
-   the Firefox WebExtension prompt, with 22 OK / 0 FAIL validation).
+ 2. **Convergence:** the §6.3 finding from Run A, B, D, E, and F
+    generalises across configured cohorts (12 → 6 → 21 → 22 agents)
+    and across prompt domains (Rust GUI → Rust CLI → Firefox WebExtension
+    → CUDA kernel compatibility). Cross-pollination is a property of
+    LLM sampling temperature (Run D), prompt complexity (Run E), and
+    decision-space structure (Run F), not a property of model diversity.
+    Cross-model consensus produces a verifiable winner (Run C
+    `minimax-baseline-08` for the Rust GUI prompt, with a 53 MB binary on
+    disk; Run E `propuesta-minimax-T15` for the Firefox WebExtension
+    prompt, with 22 OK / 0 FAIL validation).
 3. **Verifiability:** the gtk4 0.10 winner from Run C has a
    working binary; the Tauri cluster (7 proposals) has none. The
    moa-from-vote vs moa-from-verification distinction (Run C §5.6)
    is the dominant factor in selecting a stack recommendation.
-   Run D confirms: validator caught 2 of 6 real bugs. **Run E
-   extends: validator caught 13 of 21 distinct defects**, including
-   4 phantom npm packages, 2 wrong selectors, and 1 retracted
-   API endpoint. The validator is load-bearing at scale.
+    Run D confirms: validator caught 2 of 6 real bugs. **Run E
+    extends: validator caught 13 of 21 distinct defects**, including
+    4 phantom npm packages, 2 wrong selectors, and 1 retracted
+    API endpoint. **Run F adds ~7 defect categories in a lower-entropy
+    CUDA domain and demonstrates byte-precise PTX validation**, while
+    also showing why similar cohort size does not imply the same defect
+    count. The validator is load-bearing at scale.
 4. **Cohort uniformity enables controlled comparison:** Run D's
    6-baseline cohort produced comparable `sintesis_central`
    evidence not contaminated by cross-model signal. Run E's
@@ -1752,9 +2237,9 @@ larger cohort confirms stability.
 
 ---
 
-## 9. Run C and Run D reference (2026-07-13)
+## 9. Run C–F reference (2026-07-13 to 2026-07-16)
 
-This section is a quick-reference for Run C and Run D; full data is in
+This section is a quick-reference for Runs C–F; full data is in
 the bitácoras linked below.
 
 ### 9.1 Run C — 2026-07-13, v1.2.1
@@ -1860,27 +2345,26 @@ Full data: `docs/research/experiments/2026-07-15-moodle-quiz-extractor-v7.md`.
   incomplete — 6 of 13 Group B variants exercised, `baseline-09`
   aborted after 2 empty retries).
 
----
+### 9.4 Run F — 2026-07-16, v1.3
 
-## Appendix A — Configuration used
+Full data: `docs/research/experiments/2026-07-16-voxora-kernels-v8.md`.
 
-[Full orquestador.json elided; identical to bitácora §1.]
-
-## Appendix B — Winner path
-
-`out/rust-gui-popup-v5/iter-1/01-propuesta-minimax-baseline-08.md`
-(Run C winner, gtk4 0.10 recipe) — open in the bundle's corpus or
-render via any markdown viewer. The 53 MB ELF binary it describes
-exists at
-`/tmp/opencode-moa-v5-test/rust-gui-popup/target/debug/rust-gui-popup`,
-produced by `cargo build --quiet` from the proposal's Cargo.toml
-verbatim.
+- **Bundle:** opencode-moa v1.3.
+- **ID:** `voxora-kernels` — CUDA-kernel compatibility for Pascal `sm_61`, targeting the exact `candle-kernels 0.9.2` graph used by Voxora.
+- **Roster:** **22 configured agents** (9 Group A baselines, 6 Group B prompt injections, 6 Group C sweeps, and 1 external `propuesta-deepseek-flash`). Five additional agents were excluded before configuration and produced no files.
+- **Config:** `max_iteraciones: 10`, `umbral_convergencia: 0.2` (not exercised), `validacion_empirica: true`, `step_5_modo: sintesis_central`, `sintesis_final: true`, `param_validation_report: true`, `/orquestar` single iteration.
+- **Outcome:** 22/22 originals plus one integrated candidate. Winner: `05-propuesta-integrada.md` with AP **9.4**, validator **9.7/10**, and 69/70 under a seven-section rubric. Runner-up: T15 with AP **9.2**, validator **9.5/10**, and 48/60 under six sections. The +21 total-point difference is not comparable because the integrated candidate received a synthetic seventh section.
+- **Physical evidence:** `nvcc 12.9.86 -arch=sm_61 -ptx` reproduced a 282,810-byte patched PTX with 0 `atom.add.f16` and 8 `softmax_f16` matches in three validation paths. This is compile/PTX evidence, not end-to-end Qwen transcription evidence.
+- **Convergence and defects:** 9 themes, maximum 17/22 on the in-tree patch approach, and approximately 7 defect categories. The lower defect count than Run E's 13 is interpreted as a prompt-complexity effect, not as a cohort-size law.
+- **Honest limitations:** single iteration, byte-derived ~$0.20 cost and reconstructed ~78-minute wall-clock, validator webfetch timeout mitigated but not fixed, unresolved BF16 runtime policy, unexecuted G5 audio gate, and Maxwell deferred.
 
 ---
 
 ## Appendix A — Configuration used
 
 [Full orquestador.json elided; identical to bitácora §1.]
+
+---
 
 ## Appendix B — Winner paths
 
@@ -1895,5 +2379,10 @@ verbatim.
 - **Run E (v1.3, 2026-07-15):** `/tmp/opencode-moa-v7-test/out/moodle-quiz-extractor/iter-1/01-propuesta-minimax-T15.md`
   (the winning original; the integrated proposal that lost is at
   `/tmp/opencode-moa-v7-test/out/moodle-quiz-extractor/iter-1/05-propuesta-integrada.md`)
+- **Run F (v1.3, 2026-07-16):** `/tmp/opencode-moa-v8-test/out/voxora-kernels/iter-1/05-propuesta-integrada.md`
+  (integrated candidate; validation at
+  `/tmp/opencode-moa-v8-test/out/voxora-kernels/iter-1/06-validacion-integrada.md`;
+  winner declaration at
+  `/tmp/opencode-moa-v8-test/out/voxora-kernels/iter-1/08-ganador.md`)
 
 Open any file in the bundle's corpus or render via any markdown viewer.

@@ -2,7 +2,7 @@
 
 This document outlines the planned evolution of `opencode-moa`. Items are organized by release horizon. Dates are approximate and subject to change based on user feedback.
 
-## Current focus: v1.3 (2026-07-13, in local testing, not yet released)
+## Current focus: v1.3 (2026-07-16, Run F documented; local testing, not yet released)
 
 ### What v1.3 changed
 
@@ -44,13 +44,15 @@ agentes removed.
   - **§6.3 with uniform model:** 6 identical-input proposals converged on 10 ideas (4-6 of 6 majority on each). Cross-pollination is a property of LLM sampling temperature, not a property of model diversity. Refines §6.3.
   - **Defect detection rate: 2 of 6 (33%)** caught real bugs (off-by-one boundary, panic-on-overflow). The validator is a load-bearing step, not a courtesy.
   - **Bitácora:** `docs/research/experiments/2026-07-13-fib-rust-cli-v6.md`. **Paper draft bumped to v0.3** with §5.8 (Run D results), §6.2.5 (cohorte uniforme §6.2 evidence), §6.3.3 (cross-pollination uniform model), §6.4 (Run D limitations), §7 items 5a/5b/5c, §8 conclusion extended, §9 split into §9.1 Run C + §9.2 Run D.
-- [x] **Run E validated at 21-agent cohort** on Firefox WebExtension domain (moodle-quiz-extractor, 2026-07-15). The largest `sintesis_central + validacion_empirica` end-to-end cohort to date. Key empirical confirmations:
+- [x] **Run E validated at 21-agent cohort** on Firefox WebExtension domain (moodle-quiz-extractor, 2026-07-15). The largest `sintesis_central + validacion_empirica` end-to-end cohort before Run F.
   - **§6.3 scales to 21-cohort and to a 6-requirement prompt:** 9 convergent themes (3+ of 21 agreement each), with WXT+MV3 floor at 12/21 — strongest convergence in the corpus. Cross-pollination scales with prompt complexity (number of orthogonal decision axes), not just with cohort size.
   - **§6.2 counter-evidence (first in opencode-moa):** integrated proposal ranked 16/22 with composite 6.05/10, **losing** by 2.94 points to the winning original `propuesta-minimax-T15` (composite 8.99/10). The integrator introduced 4 critical-path defects that the originals did not have (broken `packTar` import, asset path contradiction, `pnpm audit` endpoint retired, non-exact `packageManager`). The §6.2 proposition is refined: "integration is typically higher-scoring, except when the integrator introduces critical-path defects."
   - **First T-variant to win the ranking:** `propuesta-minimax-T15` (T=1.5 sweep) led with composite 8.99. Validates the v1.3 roster decision to keep T15 (Group C parameter-sweep agents are competitive with Group A baselines).
   - **Defect detection rate: ~13 of 21 (62%)** at 21-cohort scale (vs Run D's 33% at 6-cohort). 4 phantom npm packages, 2 wrong selectors, 1 retracted endpoint, 1 wrong API, 1 invalid manifest JSON, 1 invalid OTLP spanId, etc. Validator is **load-bearing for the cohort's overall trustworthiness**, not a courtesy.
   - **`sintesis_central` did not hang on the 21-agent cohort** (despite Run C's earlier 5-agent hang). The hang is likely specific to step-5 subagent context size, not to step-1 batch size.
   - **Bitácora:** `docs/research/experiments/2026-07-15-moodle-quiz-extractor-v7.md`. **Paper draft bumped to v0.4** with §5.9 (Run E results, 7 subsections), §6.2.6 (counter-evidence), §6.3.4 (21-cohort cross-pollination), §6.4 (Run E limitations), §7 items 5d/5e/5f, §8 extended (5-run synthesis), §9.3 Run E reference, Appendix B updated with 5 winner paths.
+- [x] **Run F validated the pipeline on a CUDA-kernel compatibility domain** (`voxora-kernels`, 2026-07-16) with a 22-agent configured cohort. The integrated candidate won by **+0.2 AP** (9.4 vs T15's 9.2), with validator 9.7/10 and 18/18 source-attributed line ranges verified. Three validation paths reproduced the same `sm_61` PTX target (282,810 bytes, 0 `atom.add.f16`, 8 `softmax_f16`) on `nvcc 12.9.86`. The 69/70 versus 48/60 totals are not comparable because the integrated candidate received a synthetic seventh section. The run also found ~7 defect categories, exposed the unresolved BF16 runtime gate, deferred Maxwell support, and mitigated but did not fix the validador webfetch timeout.
+  - **Bitácora:** `docs/research/experiments/2026-07-16-voxora-kernels-v8.md`. **Paper draft bumped to v0.5** with §5.10, §6.2.7, §6.3.5, Run F limitations, future work 5j–5o, §8, and §9.4.
 
 ### Planned v1.3.x follow-ups
 
@@ -238,5 +240,5 @@ Maintainer will review and either accept (and add to roadmap), defer (with ratio
 
 ---
 
-Last updated: 2026-07-13 (v1.3 revision)
+Last updated: 2026-07-16 (Run F documentation)
 Maintainer: Israel Roldan [israel.alberto.rv@gmail.com](mailto:israel.alberto.rv@gmail.com)
