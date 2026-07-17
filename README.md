@@ -5,7 +5,7 @@
 [![OpenCode](https://img.shields.io/badge/OpenCode-native-blueviolet)](https://opencode.ai)
 [![Mixture-of-Agents](https://img.shields.io/badge/inspired%20by-Mixture%20of%20Agents-orange)](https://arxiv.org/abs/2406.04692)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](#license)
-[![Status](https://img.shields.io/badge/status-v1.3--RunE-yellow)]()
+[![Status](https://img.shields.io/badge/status-v1.3--RunF-yellow)]()
 
 ## What is opencode-moa?
 
@@ -79,38 +79,25 @@ Each iteration produces THREE sibling directories — one for reports
 
 ```
 out/auth-jwt/iter-1/                   ← reports (.md)
-├── 01-propuesta-glm.md
-├── 01-propuesta-kimi.md
-├── 01-propuesta-mimo.md
-├── 02-validacion-glm.md
-├── 02-validacion-kimi.md
-├── 02-validacion-mimo.md
+├── 01-propuesta-{agente}.md            ← one per configured proposal agent
+├── 02-validacion-{agente}.md           ← when empirical validation is enabled
 ├── 03-calificacion-evaluador.md
 ├── 04-clasificacion.md
-├── 05-mejorada-glm.md
-├── 05-mejorada-kimi.md
-├── 05-mejorada-mimo.md
-├── 06-validacion-mejorada-glm.md
-├── 06-validacion-mejorada-kimi.md
-├── 06-validacion-mejorada-mimo.md
+├── 05-propuesta-integrada.md            ← `sintesis_central` mode
 ├── 07-calificacion-final.md
 ├── 08-ganador.md
-└── 09-sumario.md
+├── 09-sumario.md
+└── 10-sintesis-cross-iter.md            ← when `sintesis_final` is enabled
 
 work/auth-jwt/iter-1/                   ← empirical artifacts (per subagent)
-├── 01-propuesta-glm/                   ← cargo scaffolds, downloaded deps,
-│   ├── Cargo.toml                       compiled binaries, scratch test code
-│   └── target/release/binary (53 MB)
-├── 01-propuesta-kimi/
-├── 02-validacion-glm/                  ← per-section viability scratch
+├── 01-propuesta-{agente}/              ← scaffolds, dependencies, binaries
+├── 02-validacion-{agente}/             ← per-section viability scratch
 ├── 03-calificacion-evaluador/          ← usually empty (pure reasoning)
 └── ...
 
 logs/auth-jwt/iter-1/                   ← bash session log per subagent
-├── 01-propuesta-glm.log
-├── 01-propuesta-kimi.log
-├── 02-validacion-glm.log
-├── 03-calificacion-evaluador.log
+├── 01-propuesta-{agente}.log
+├── 02-validacion-{agente}.log
 └── ...
 ```
 
@@ -144,7 +131,7 @@ opencode-moa/
     │   ├── orquestador.md                 ← PRIMARY: coordinates the flow
     │   ├── propuesta-glm.md               ← generates proposals with GLM-5.1
     │   ├── propuesta-kimi.md              ← generates proposals with Kimi K2.6
-    │   ├── propuesta-mimo.md              ← generates proposals with MiniMax-M3
+     │   ├── propuesta-mimo.md              ← generates proposals with MiMo v2.5 Pro via OpenCode Go
     │   ├── propuesta-deepseek.md          ← generates proposals with DeepSeek V4 Pro
     │   ├── propuesta-minimax.md           ← generates proposals with MiniMax-M3 (your token plan)
     │   ├── evaluador.md                   ← evaluates all proposals
@@ -160,12 +147,11 @@ opencode-moa/
 
 ### Multi-model competition (step 1)
 
-Three AI models generate proposals for the same prompt in parallel:
-- GLM-5.1
-- Kimi K2.6
-- MiniMax-M3
-
-Each writes to its own file. The orchestrator invokes all three with a single response containing three `task` calls. The bundle ships five `propuesta-*` variants (`glm`, `kimi`, `mimo`, `deepseek`, `minimax`); pick any three in your `orquestador.json`.
+The v1.3 bundle includes a 42-agent default roster: 6 OpenCode Go agents
+and 36 MiniMax Token Plan agents. A project-level `orquestador.json` may
+select a smaller cohort or add custom variants. Proposals are launched in
+batches controlled by `step_1_concurrent_max`, and each selected agent
+writes its own report.
 
 ### Empirical validation (step 2)
 
@@ -181,10 +167,10 @@ By default, proposals with low viability stay in the ranking as ⚠️ warnings 
 
 ### Iterative convergence (step 9 → step 0 loop)
 
-`/orquestar-iterate` repeats the entire flow until:
+`/orquestar-iterate` repeats the configured flow until:
 - The score improvement between iterations falls below `umbral_convergencia` (default 0.5)
-- The number of iterations reaches `max_iteraciones` (default 3)
-- A regression is detected (always stops)
+- The number of iterations reaches `max_iteraciones` (default 5 in the v1.3 bundle)
+- A negative improvement is detected; the orchestrator stops on regression
 
 ### 4-layer smoke test control
 
@@ -225,18 +211,28 @@ The merge is automatic and non-conflicting keys are preserved.
 
 ## Configuration
 
-The `orquestador.json` file has 9 fields:
+The `orquestador.json` file has 18 configurable fields plus `$schema`:
 
 | Field | Type | Default | Description |
 |---|---|---|---|
-| `version` | string | required | Schema version (semver) |
-| `modelos_a_competir` | array<string> | required | Models that generate proposals |
-| `modelo_objetivo` | string | required | Model for evaluation/validation/synthesis |
-| `max_iteraciones` | integer (1-10) | 3 | Max iterations in iterate mode |
-| `umbral_convergencia` | number (0-50) | 0.5 | Min score improvement to continue iterating |
-| `validacion_empirica` | boolean | true | Enable steps 2 and 6 (bash validation) |
-| `descalificar_fallida` | boolean | false | Opt-in strict disqualification |
-| `smoke_test` | boolean \| "auto" | false | Smoke test mode |
+| `version` | string | required | Schema version |
+| `agentes_a_competir` | array<string> | required | Agent IDs that generate proposals |
+| `modelo_objetivo` | string | required | Target model for meta-agents |
+| `max_iteraciones` | integer (1-10) | 5 | Max iterations in iterate mode |
+| `umbral_convergencia` | number | 0.5 | Minimum score improvement to continue |
+| `validacion_empirica` | boolean | false | Enable validation steps 2 and 6 |
+| `descalificar_fallida` | boolean | false | Enable strict disqualification |
+| `smoke_test` | boolean | false | Smoke-test mode |
+| `step_1_concurrent_max` | integer | 3 | Proposal batch size |
+| `step_1_agent_timeout_seconds` | integer | 600 | Per-agent timeout; 0 means unlimited |
+| `step_5_modo` | string | `skip` | `sintesis_central`, `self_improve`, or `skip` |
+| `sintesis_final` | boolean | false | Write cross-iteration synthesis |
+| `sintesis_final_modelo` | string | target model | Model for final synthesis |
+| `multi_eval` | boolean | false | Enable multi-model evaluation |
+| `multi_eval_modelos` | array<string> | `[]` | Evaluator models when enabled |
+| `max_wall_clock_minutes` | integer | 0 | Global wall-clock cap; 0 means unlimited |
+| `if_mejoras_tecnicamente_similares_a_otras` | boolean | false | Keep technically similar improvements |
+| `param_validation_report` | boolean | true | Aggregate declared sampling parameters |
 
 See [`docs/proposals/001-orquestador-nativo-opencode.md`](docs/proposals/001-orquestador-nativo-opencode.md#7-orquestadorjson--esquema-completo) for the complete schema.
 
@@ -246,11 +242,12 @@ See [`docs/proposals/001-orquestador-nativo-opencode.md`](docs/proposals/001-orq
 - 🔍 [Iterations analysis](docs/research/iterations-analysis.md) — empirical evidence backing the design decisions
 - 🧪 [v5 experiment bitácora](docs/research/experiments/2026-07-13-rust-gui-popup-v5.md) — 52-agent iter-1 with measured cost + 53 MB winner binary
 - 🧪 [v6 experiment bitácora](docs/research/experiments/2026-07-13-fib-rust-cli-v6.md) — 6-baseline minimum-cohort `sintesis_central` + `validacion_empirica` end-to-end with defect-detection evidence
-- 🧪 [v7 experiment bitácora](docs/research/experiments/2026-07-15-moodle-quiz-extractor-v7.md) — 21-agent iter-1 on Firefox WebExtension domain, sintesis_central+validacion_empirica, T15 winner (first T-variant), first §6.2 counter-evidence
-- 📄 [Paper draft (DRAFT v0.4)](docs/papers/DRAFT-multi-model-orchestration.md) — Run A/B/C/D/E synthesis with cost calibration + minimum-cohort §6.2/§6.3 evidence + 21-cohort cross-pollination + integrator-loss counter-evidence
+- 🧪 [v7 experiment bitácora](docs/research/experiments/2026-07-15-moodle-quiz-extractor-v7.md) — 22 configured agents, 21 proposal outputs on Firefox WebExtension domain, T15 winner (first T-variant), first §6.2 counter-evidence
+- 🧪 [v8 experiment bitácora](docs/research/experiments/2026-07-16-voxora-kernels-v8.md) — 22-agent configured CUDA-kernel compatibility cohort, source-attributed integration, byte-precise PTX validation
+- 📄 [Paper draft (DRAFT v0.5)](docs/papers/DRAFT-multi-model-orchestration.md) — Run A–F synthesis with cost calibration, minimum-cohort evidence, Run E counter-evidence, and Run F CUDA-kernel results
 - 📦 [Installation guide](docs/installation.md) — detailed install instructions for local, VPS, Docker, etc.
 - 🧪 [Examples](examples/) — minimal smoke test and full REST API example
-- 📝 [Changelog](CHANGELOG.md) — version history (v1.3 entry: 52 → 41 agentes, 8 new Grupo B variants; Run E entry: 21-agent Firefox WebExtension cohort)
+- 📝 [Changelog](CHANGELOG.md) — version history, Run E, and Run F experiment records
 - 🗺️ [Roadmap](ROADMAP.md) — future plans
 
 ## Background

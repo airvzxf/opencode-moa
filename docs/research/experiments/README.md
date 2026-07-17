@@ -33,6 +33,7 @@ Each file is named `YYYY-MM-DD-<short-id>.md` and follows this layout:
 | 2026-07-13 | rust-gui-popup-v5 | Rust GUI             | 52-agent iter-1, step_5_modo:skip, validacion_empirica:false, 0 descalificadas, 26 ⚠️ | minimax-baseline-08 41/50 (gtk4 0.10) |
 | 2026-07-13 | fib-rust-cli-v6   | Rust CLI             | 6-baseline iter-1, sintesis_central+validacion_empirica end-to-end, 0 descalificadas, 2 ⚠️ | integradora 45/50 (9.8/10 viabilidad) |
 | 2026-07-15 | moodle-quiz-extractor-v7 | Firefox WebExtension | 21-agent iter-1 (8 baselines + 6 Grupo B + 6 Grupo C + 1 external), sintesis_central+validacion_empirica end-to-end, 1 descalificada (T05K50), 1 sin validación (baseline-02), 13 defectos detectados | propuesta-minimax-T15 43/50 (8.99/10, first T-variant to win; integradora ranked 16/22 with AP=1) |
+| 2026-07-16 | voxora-kernels-v8 | CUDA kernel compat (Pascal sm_61) | 22-agent configured iter-1 (9 baselines + 6 Grupo B + 6 Grupo C + 1 external; 5 additional agents excluded before configuration), sintesis_central+validacion_empirica end-to-end, 0 descalificadas, 4 NOT VIABLE per section, ~7 defect categories, byte-precise PTX 282,810 B reproduced | **integradora 69/70** (AP 9.4, validator 9.7/10, first source-attributed integrator with 18/18 citations verified ≤5 lines; comparable §6.2 margin +0.2 AP over T15; total denominators non-uniform) |
 
 ## Why a separate log file for each run
 
