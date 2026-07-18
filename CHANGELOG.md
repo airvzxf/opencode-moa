@@ -2,6 +2,57 @@
 
 All notable changes to `opencode-moa` are documented here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7] - 2026-07-18
+
+### Removed
+
+- **23 MiniMax Token Plan agents** from the default roster:
+  - `propuesta-minimax` (1 "Original" agent — subsumed by the sweep matrix; the original baseline is preserved as `propuesta-minimax.md.v1.6-preserved` if re-creation is needed)
+  - `propuesta-minimax-baseline-{01..15}` (15 Grupo A baselines — replaced by the triplicated sweep matrix; every T×P cell now has its own 3-replica intrinsic-variance control cohort, not just T=0.7)
+  - `propuesta-minimax-T{05,07,10,15}` (4 standalone Grupo C temperature sweeps)
+  - `propuesta-minimax-P099` (1 standalone Grupo C top_p sweep)
+  - `propuesta-minimax-T{05K50,10K200}` (2 standalone Grupo C combos)
+
+### Added
+
+- **45 Grupo C T×P sweep matrix agents** — `propuesta-minimax-T{P}P{P}-{01..03}.md`:
+  - 5 temperature values: 0.0, 0.5, 1.0, 1.5, 2.0
+  - 3 top_p values: 0.0, 0.5, 1.0
+  - 3 replicas per (T,P) cell (`-01`, `-02`, `-03` of `03`)
+  - All bind to `model: minimax-coding-plan/MiniMax-M3`
+  - T=0.0 (T00) and T=2.0 (T20) are out-of-Anthropic-spec — measures whether MiniMax clamps, errors, or accepts
+  - P=0.0 (P00) is the greedy-decoding control cell
+  - Replicas of the same (T,P) cell are byte-identical except for the description string ("clone NN of 03") — preserves identical LLM inputs while allowing grep/log distinction
+  - File naming: 5 × 3 × 3 = 45 agents; ordering in `agentes_a_competir` is cartesian (T, P, clone)
+
+### Changed
+
+- **Default roster: 42 → 64 agentes_a_competir** (6 OpenCode Go + 13 Grupo B + 45 Grupo C sweep matrix).
+- `opencode-moa/orquestador.json`: `version` bumped `1.6` → `1.7`; `$schema` URL bumped `v1.6.json` → `v1.7.json`; `agentes_a_competir` rewritten in cartesian order.
+- `opencode-moa/agents/orquestador.md` inline "Default configuration" JSON example: roster mirrored to match.
+- `opencode-moa/agents/orquestador.md` step 1 prompt template: T*P* combinations explicitly mentioned in the parameter-reporting instruction.
+- `opencode-moa/agents/orquestador.md` step 4 (sintetizador): `## Parameter validation report` example table updated to use new T×P agent names.
+- `opencode-moa/AGENTS.md` §1: roster table updated (1 Original + 15 A + 4 T + 1 P + 2 combos → 13 B + 45 sweep matrix); cost estimate revised (~$2.24 → ~$2.32); wall-clock estimate revised (~156 min → ~222 min).
+- `opencode-moa/AGENTS.md` §10 (`param_validation_report`): replica-cohort cross-check now references the per-cell 3 replicas (replacing the 15-baseline at T=0.7 control cohort).
+- `opencode-moa/README.md`: top banner, install table, and trailing references updated to v1.7 / 64 agents.
+
+### Migration notes (v1.6 → v1.7)
+
+- Project-level `orquestador.json` overrides that reference any of the
+  23 removed agent names will fail with "agent file not found". Re-run
+  `./install.sh` to pick up the v1.7 bundle, then edit the project
+  override to either drop the dead references or substitute the
+  equivalent sweep-matrix entries (e.g. swap `propuesta-minimax-T15`
+  → `propuesta-minimax-T15P10-01`).
+- Historical run outputs that referenced removed agents (e.g.
+  `01-propuesta-minimax-T15.md` from Run D 2026-07-13, Run E 2026-07-15,
+  Run F 2026-07-16) are untouched; the bitácoras
+  `docs/research/experiments/*.md` and paper draft
+  `docs/papers/DRAFT-multi-model-orchestration.md` still reference them
+  as evidence of the v1.3 sparse-sweep era.
+- The `check-no-forbidden-model.sh` CI script does not need changes —
+  no agent in the v1.7 bundle references `opencode-go/minimax-m3`.
+
 ## [1.6] - 2026-07-18
 
 ### Changed (BREAKING)
