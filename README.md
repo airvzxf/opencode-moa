@@ -192,7 +192,6 @@ The `orquestador.json` file has 13 configurable fields plus `$schema`:
 | `multi_eval` | boolean | false | Enable multi-model evaluation |
 | `multi_eval_modelos` | array<string> | `[]` | Evaluator models when enabled |
 | `max_wall_clock_minutes` | integer | 0 | Global wall-clock cap; 0 means unlimited |
-| `if_mejoras_tecnicamente_similares_a_otras` | boolean | false | Keep technically similar improvements |
 | `param_validation_report` | boolean | true | Aggregate declared sampling parameters |
 
 See [`docs/proposals/001-orquestador-nativo-opencode.md`](docs/proposals/001-orquestador-nativo-opencode.md#7-orquestadorjson--esquema-completo) for the complete schema.

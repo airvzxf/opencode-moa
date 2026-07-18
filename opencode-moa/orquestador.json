@@ -67,7 +67,5 @@
 
   "max_wall_clock_minutes": 0,
 
-  "if_mejoras_tecnicamente_similares_a_otras": false,
-
   "param_validation_report": true
 }

@@ -90,7 +90,6 @@ pure reasoning and only produce one .md).
       - multi_eval (bool) [NEW v1.1] — default false (single-eval remains default)
       - multi_eval_modelos (array<string>) [NEW v1.1] — empty by default
       - max_wall_clock_minutes (int) [NEW v1.1] — default 0 (unlimited; positive values opt into a global time limit)
-      - if_mejoras_tecnicamente_similares_a_otras (bool) [NEW v1.1] — default false
       - param_validation_report (bool) [NEW v1.2] — default true (ask sintetizador for parameter-vs-observed table)
 
 4. **Schema v1.2: agent-first roster resolution.** For each entry in
@@ -232,7 +231,6 @@ When merging, the hardcoded v1.2 defaults before any JSON override are:
   "multi_eval": false,
   "multi_eval_modelos": [],
   "max_wall_clock_minutes": 0,
-  "if_mejoras_tecnicamente_similares_a_otras": false,
   "param_validation_report": true
 }
 ```
@@ -564,15 +562,6 @@ If after all batches a particular subagent still hasn't written
 its file (the rest did), ABORT that specific subagent's contribution —
 log "`{agent}` did not converge in time; excluded from this run"
 — and continue with the proposals that did.
-
-If `if_mejoras_tecnicamente_similares_a_otras` evaluates true on step 1
-results (the top 5 proposals in `04-clasificacion.md` have stack +
-architecture overlap > 80%), the next step 1 prompts should append an
-extra creativity boost clause: "If your draft ends up architecturally
-identical to 80%+ of the others, do not accept it. Restart and seek a
-non-conventional angle: an alternative dependency, a different layout
-pattern, or a security/performance justification. The angle must be
-defensible, not fictional."
 
 ## Step 2 — Empirical validation (parallel, optional)
 
