@@ -4,7 +4,7 @@ This file documents the operational gotchas of the `opencode-moa` agent
 bundle: model-binding conflicts, headless-mode permission workarounds,
 and the reasoning behind the default `agentes_a_competir` roster.
 Read this **before** running `./install.sh` and **before** invoking
-`/orquestar` or `/orquestar-iterate` for the first time.
+`/orquestar` for the first time.
 
 ## 1. The `agentes_a_competir` default roster (v1.3, 2026-07-13)
 
@@ -40,7 +40,7 @@ restore of `propuesta-minimax-maintainable` (v1.3.1 addendum).
 
 | Group | # agents | Naming | Rationale |
 |---|---:|---|---|
-| Original | 1 | `propuesta-minimax` | Pre-v1.2 baseline. Kept as `iter-0` reference. |
+| Original | 1 | `propuesta-minimax` | Pre-v1.2 baseline. Kept as reference for direct comparability with earlier runs. |
 | A — Baselines | 15 | `propuesta-minimax-baseline-{01..15}` | 15 clones with identical frontmatter (T=0.7). Measures intrinsic variance of MiniMax M3 sampling. Increased from 10 in v1.3 to strengthen statistical base. |
 | B — Prompt injection | 13 | `propuesta-minimax-{creative,security-first,minimal,testable,maintainable,a11y,errors,portable,i18n,rustdoc,observability,ci-github,cd-releases}` | Each adds a priority directive **as the first content** of the system prompt (v1.2.1+v1.3 inyectado fix). The directive overrides all other principles. 8 new variants in v1.3 cover accessibility, error handling, portability, i18n, documentation, observability, CI, CD. `maintainable` was restored in v1.3.1 from the `.v1.2-preserved` backup as a 13th variant (orthogonal to `testable`). |
 | C — Temperature sweep | 4 | `propuesta-minimax-T{05,07,10,15}` | T ∈ {0.5, 0.7, 1.0, 1.5}. T=1.5 is out-of-Anthropic-spec — verifies whether MiniMax clamps it. Trimmed from 7 in v1.2.1 to 4 in v1.3 (dropped T00/T03/T08 for compatibility or single-window trap). |
@@ -50,14 +50,14 @@ restore of `propuesta-minimax-maintainable` (v1.3.1 addendum).
 
 **Grand total: 6 + 36 = 42 agentes_a_competir.**
 
-### Cost estimate (per iter-1, extrapolated from Run C v5)
+### Cost estimate (per run, extrapolated from Run C v5)
 
 - OCG (6 of 11 kept): ~$2.10 vs $4.44 full (–$2.34, –53%)
 - MiniMax (36 vs 41): ~$0.14 vs $0.16 (–$0.02, –13%)
 - **Total:** ~$2.24 vs $4.60 (–$2.36, –51%)
 - Cache hit rate: ~91% of input tokens served from cache (the dominant cost-optimization factor)
 
-### Wall-clock estimate (per iter-1, at step_1_concurrent_max=3)
+### Wall-clock estimate (per run, at step_1_concurrent_max=3)
 
 - Step 1: 42 agentes / 3 concurrent = 14 batches × ~9 min = ~126 min (vs 165 min for 52-agent)
 - Steps 3-9: ~30 min (unchanged)
@@ -111,10 +111,10 @@ re-bound to the forbidden model.
 2. When I killed the parent orchestrator PID, this subagent became an
    **orphan** and kept running.
 3. The orphan continued writing spurious `01-propuesta-mimo.md` files
-   with the forbidden model into iter-2's output directory.
-4. This orphan then interfered with iter-2 launches, requiring me to
+   with the forbidden model into a follow-up output directory.
+4. This orphan then interfered with subsequent launches, requiring me to
    kill all `opencode run` processes — which also killed 11 legitimate
-   iter-2 propuesta subprocesses mid-stream.
+   propuesta subprocesses mid-stream.
 
 ### The fix (PR #4, applied in v1.2.1)
 
@@ -139,10 +139,9 @@ temperature: 0.7
   orchestrator's subagents inherit their model from their own
   frontmatter, NOT from `modelo_objetivo` in orquestador.json, so this
   was a separate bug to fix.
-- `commands/orquestar.md` and `commands/orquestar-iterate.md` had
-  `model: opencode-go/minimax-m3` in their frontmatter. Changed to
-  `model: minimax-coding-plan/MiniMax-M3`. The command-level `model:`
-  field overrides the agent's own model.
+- `commands/orquestar.md` had `model: opencode-go/minimax-m3` in its
+  frontmatter. Changed to `model: minimax-coding-plan/MiniMax-M3`. The
+  command-level `model:` field overrides the agent's own model.
 - `orquestador.md` inline JSON example (the "Default configuration"
   section) was updated to use the 8-model roster and
   `modelo_objetivo: minimax-coding-plan/MiniMax-M3` (matches the actual
@@ -267,7 +266,7 @@ setsid opencode run \
   --auto --pure --print-logs --log-level=INFO \
   --title "step 5 — sintesis_central" \
   --dir /tmp/your/test/dir \
-  "Read all 12 proposals in /tmp/your/test/dir/out/{id}/iter-1/01-propuesta-*.md and produce /tmp/your/test/dir/out/{id}/iter-1/05-propuesta-integrada.md following the sintesis_central rules in opencode-moa/agents/sintetizador.md" \
+  "Read all 12 proposals in /tmp/your/test/dir/out/{id}/01-propuesta-*.md and produce /tmp/your/test/dir/out/{id}/05-propuesta-integrada.md following the sintesis_central rules in opencode-moa/agents/sintetizador.md" \
   < /dev/null > /tmp/your/test/dir/logs/step5.log 2>&1 &
 disown
 ```
@@ -364,7 +363,7 @@ sees in its system prompt.
 - Bitácora 2026-07-11 (v0.2.0-beta baseline): `docs/research/experiments/2026-07-11-rust-gui-app.md`
 - Bitácora 2026-07-12 (v0.3 sintesis_central validation): `docs/research/experiments/2026-07-12-rust-gui-app-v3.md`
 - Bitácora 2026-07-13 (v1.2 — 40-agent MiniMax sweep): `docs/research/experiments/2026-07-13-minimax-sweep-v4.md`
-- Bitácora 2026-07-13 (v1.2.1 — 52-agent iter-1, gtk4 0.10 winner, $4.60 cost): `docs/research/experiments/2026-07-13-rust-gui-popup-v5.md`
+- Bitácora 2026-07-13 (v1.2.1 — 52-agent run, gtk4 0.10 winner, $4.60 cost): `docs/research/experiments/2026-07-13-rust-gui-popup-v5.md`
 - Paper draft §5.5-§5.7 + §7.9 (Run C, v1.3 revision): `docs/papers/DRAFT-multi-model-orchestration.md`
 - OpenCode upstream bug: [anomalyco/opencode#35073](https://github.com/anomalyco/opencode/issues/35073)
 - OpenCode fix PR: [anomalyco/opencode#35823](https://github.com/anomalyco/opencode/pull/35823)
@@ -552,18 +551,17 @@ artifacts ended up scattered across the workspace:
 - `/tmp/opencode-moa-v5-test/gtk4-overlay-test/` — gtk4-layer-shell verification
 
 Cleaning up a run meant `find /tmp -name 'opencode-moa-*' -prune`.
-Iterating across rounds polluted prior runs. The convention below
-fixes this.
+The convention below fixes this.
 
 ### The three first-class sibling directories
 
-Every iteration creates three siblings under `$WORKSPACE/`:
+Each run creates three siblings under `$WORKSPACE/`:
 
 | Directory | Purpose | Typical content |
 |---|---|---|
-| `out/{id}/iter-{N}/` | Pipeline reports (existing) | `.md` files only |
-| `work/{id}/iter-{N}/{step-prefix}/` | Per-subagent empirical scratch space | cargo scaffolds, `node_modules/`, compiled binaries, downloaded assets |
-| `logs/{id}/iter-{N}/{step-prefix}.log` | Per-subagent bash session log | stdout/stderr of the subagent's bash invocations |
+| `out/{id}/` | Pipeline reports | `.md` files only |
+| `work/{id}/{step-prefix}/` | Per-subagent empirical scratch space | cargo scaffolds, `node_modules/`, compiled binaries, downloaded assets |
+| `logs/{id}/{step-prefix}.log` | Per-subagent bash session log | stdout/stderr of the subagent's bash invocations |
 
 ### Naming rule
 
@@ -582,7 +580,6 @@ The work subdirectory uses the same prefix as the output file
 | 7 | `07-calificacion-final.md` | `07-calificacion-final/` | `07-calificacion-final.log` |
 | 8 | `08-ganador.md` | `08-ganador/` | `08-ganador.log` |
 | 9 | `09-sumario.md` | (none — orchestrator writes directly) | (none) |
-| 10 | `10-sintesis-cross-iter.md` | `10-sintesis-cross-iter/` | `10-sintesis-cross-iter.log` |
 
 ### Worked example
 
@@ -591,12 +588,12 @@ would have been:
 
 ```
 rust-gui-popup-v5/
-├── out/iter-1/
+├── out/
 │   ├── 01-propuesta-minimax-baseline-08.md   (the gtk4 0.10 winner)
 │   ├── 02-validacion-minimax-baseline-08.md
 │   ├── ...
 │   └── 09-sumario.md
-├── work/iter-1/
+├── work/
 │   ├── 01-propuesta-minimax-baseline-08/   ← the 53 MB gtk4 binary lives here
 │   │   ├── Cargo.toml
 │   │   ├── src/main.rs
@@ -604,7 +601,7 @@ rust-gui-popup-v5/
 │   ├── 01-propuesta-mimo/                  ← the iced scaffold lives here
 │   │   └── iced-test/
 │   └── 06-validacion-integrada/
-└── logs/iter-1/
+└── logs/
     ├── 01-propuesta-minimax-baseline-08.log
     ├── 01-propuesta-mimo.log
     └── ...
@@ -643,12 +640,12 @@ Three reasons:
 1. **Per-subagent isolation**: each subagent has its own folder
    so two concurrent `propuesta-X` and `propuesta-Y` builds cannot
    collide (they did in v5 — see the 4 gtk4 0.10 agents).
-2. **Easy cleanup**: `rm -rf work/{id}/iter-{N}/*` cleans every
+2. **Easy cleanup**: `rm -rf work/{id}/*` cleans every
    subagent's scratch space in one shot, no `find /tmp -name
    'opencode-moa-*'` hunting.
-3. **Iteration-level scoping**: iter-2's work never bleeds into
-   iter-1. The historical evidence in `work/iter-1/01-propuesta-X/`
-   stays attached to iter-1 even after iter-2 starts.
+3. **Run-level scoping**: subsequent runs' work never bleeds into
+   the current run. The historical evidence in `work/{id}/01-propuesta-X/`
+   stays attached to that run even after the next one starts.
 
 ### Disk budget
 

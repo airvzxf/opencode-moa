@@ -13,16 +13,14 @@ Arguments:
 
 Optional flags (parsed by the orchestrator):
 - --smoke-test={true|false|auto} — overrides smoke_test from config
-- --max-iter=N — overrides max_iteraciones
-- --convergence=X — overrides umbral_convergencia
-- --force — deletes out/{id}/iter-{N}/ before starting
+- --force — deletes out/{id}/ before starting
 - --no-validation — disables validation steps (2 and 6)
 
 Behavior:
 1. Read and merge orquestador.json (user + project + args)
 2. Validate configuration
 3. Execute steps 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9
-4. Write out/{id}/iter-1/09-sumario.md with final score
+4. Write out/{id}/09-sumario.md with final score
 5. Show summary to user
 
 Examples:
@@ -32,9 +30,9 @@ Examples:
 /orquestar --force "Redo the calculation" calc-v2
 
 Expected output:
-- out/auth-jwt/iter-1/01-propuesta-glm.md
-- out/auth-jwt/iter-1/01-propuesta-kimi.md
-- out/auth-jwt/iter-1/01-propuesta-mimo.md
+- out/auth-jwt/01-propuesta-glm.md
+- out/auth-jwt/01-propuesta-kimi.md
+- out/auth-jwt/01-propuesta-mimo.md
 - ... (all flow files)
-- out/auth-jwt/iter-1/08-ganador.md
-- out/auth-jwt/iter-1/09-sumario.md
+- out/auth-jwt/08-ganador.md
+- out/auth-jwt/09-sumario.md

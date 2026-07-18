@@ -21,7 +21,7 @@ Requirements:
 ## Run
 
 ```
-/orquestar-iterate "Design a REST API for inventory management with JWT auth, with CRUD for products, user registration/login with bcrypt, JWT tokens, role-based access control (admin/user), SQLite database, Express.js or Fastify, full endpoint documentation, and sample curl commands for testing" auth-jwt
+/orquestar "Design a REST API for inventory management with JWT auth, with CRUD for products, user registration/login with bcrypt, JWT tokens, role-based access control (admin/user), SQLite database, Express.js or Fastify, full endpoint documentation, and sample curl commands for testing" auth-jwt
 ```
 
 Note: the prompt is detailed because the `propuesta` agents produce better proposals with more context. The id is `auth-jwt`.
@@ -31,18 +31,18 @@ Note: the prompt is detailed because the `propuesta` agents produce better propo
 ### Step 0 — Initialization
 
 The orchestrator:
-1. Reads `~/.config/opencode/orquestador.json` (3 models, max 3 iter, threshold 0.5)
+1. Reads `~/.config/opencode/orquestador.json` (3 models by default)
 2. Validates id `auth-jwt` matches regex `^[a-z0-9][a-z0-9-]{2,29}$` ✓
 3. Verifies 3 propuesta agents exist
-4. Creates `out/auth-jwt/iter-1/`
+4. Creates `out/auth-jwt/`
 5. todowrite: [step 1-9]
 
 ### Step 1 — Proposals (parallel)
 
 Three proposals are generated simultaneously:
-- `out/auth-jwt/iter-1/01-propuesta-glm.md` — GLM-5.1's design
-- `out/auth-jwt/iter-1/01-propuesta-kimi.md` — Kimi K2.6's design
-- `out/auth-jwt/iter-1/01-propuesta-mimo.md` — MiniMax-M3-thinking's design
+- `out/auth-jwt/01-propuesta-glm.md` — GLM-5.1's design
+- `out/auth-jwt/01-propuesta-kimi.md` — Kimi K2.6's design
+- `out/auth-jwt/01-propuesta-mimo.md` — MiniMax-M3-thinking's design
 
 Each proposal includes:
 - Executive summary
@@ -137,93 +137,76 @@ The winner file `08-ganador.md` includes:
 
 The orchestrator writes `09-sumario.md` with:
 - Final score and winner
-- Iteration 1 metrics
-- Convergence status (since we used iterate mode)
-
-## Iterate decision
-
-Since this is `/orquestar-iterate` mode, after step 9:
-
-- Current score: 48/50
-- Previous score: 0 (first iteration)
-- Improvement: 48 - 0 = 48
-- Threshold: 0.5
-
-`48 >= 0.5` → CONTINUE to iteration 2.
-
-### Iteration 2
-
-The orchestrator starts a new iteration, this time with the winner as a seed (via `--iterative-seed` env var, handled by the propuesta agents).
-
-The 3 models now produce proposals that:
-- Build on minimax-m3's improved design
-- Add additional features or refinements
-- Try to address any remaining weaknesses
-
-The full flow repeats: validate, evaluate, classify, improve, re-validate, re-evaluate, select winner.
-
-### Iteration 2 hypothetical outcome
-
-- mimo-m3 iter-2 score: 49/50 (improved by 1 point)
-- Improvement: 49 - 48 = 1
-- Threshold: 0.5
-
-`1 >= 0.5` → CONTINUE to iteration 3.
-
-### Iteration 3 hypothetical outcome
-
-- mimo-m3 iter-3 score: 49/50 (no change)
-- Improvement: 49 - 49 = 0
-- Threshold: 0.5
-
-`0 < 0.5` → **CONVERGED. STOP.**
+- Run metrics
 
 ## Final output
 
-After 3 iterations, each of `out/auth-jwt/`, `work/auth-jwt/`, and
-`logs/auth-jwt/` contains:
+After the run, each of `out/auth-jwt/`, `work/auth-jwt/`, and
+`logs/auth-jwt/` contains the 16 pipeline files (winner mimo-m3 with
+48/50 in this hypothetical example):
+
 ```
-iter-1/  (16 files, winner mimo-m3 with 48/50)
-iter-2/  (16 files, winner mimo-m3 with 49/50)
-iter-3/  (16 files, winner mimo-m3 with 49/50, same as iter-2)
+out/auth-jwt/
+├── 01-propuesta-glm.md
+├── 01-propuesta-kimi.md
+├── 01-propuesta-mimo.md
+├── 02-validacion-glm.md
+├── 02-validacion-kimi.md
+├── 02-validacion-mimo.md
+├── 03-calificacion-evaluador.md
+├── 04-clasificacion.md
+├── 05-mejorada-glm.md
+├── 05-mejorada-kimi.md
+├── 05-mejorada-mimo.md     ← the winning improved proposal
+├── 06-validacion-mejorada-glm.md
+├── 06-validacion-mejorada-kimi.md
+├── 06-validacion-mejorada-mimo.md
+├── 07-calificacion-final.md
+├── 08-ganador.md
+└── 09-sumario.md
 ```
 
-The `out/` directory is the canonical pipeline output. The
-matching `work/auth-jwt/iter-N/` holds each subagent's private
-empirical artifacts (cargo scaffolds, downloaded dependencies,
-intermediate test code, compiled binaries) — naming mirrors `out/`:
-e.g. `out/auth-jwt/iter-3/01-propuesta-mimo.md` ↔
-`work/auth-jwt/iter-3/01-propuesta-mimo/`. The `logs/auth-jwt/iter-N/`
-directory holds the bash session log captured for each subagent
-(e.g. `logs/auth-jwt/iter-3/01-propuesta-mimo.log`).
+The `out/` directory is the canonical pipeline output. The matching
+`work/auth-jwt/` holds each subagent's private empirical artifacts
+(cargo scaffolds, downloaded dependencies, intermediate test code,
+compiled binaries) — naming mirrors `out/`: e.g.
+`out/auth-jwt/01-propuesta-mimo.md` ↔
+`work/auth-jwt/01-propuesta-mimo/`. The `logs/auth-jwt/` directory
+holds the bash session log captured for each subagent (e.g.
+`logs/auth-jwt/01-propuesta-mimo.log`).
 
-Total: 48 `.md` files in `out/` plus per-subagent work dirs in
+Total: 16 `.md` files in `out/` plus per-subagent work dirs in
 `work/` (most empty; the one with the winning implementation may
 hold 50–200 MB of `node_modules/` and the compiled server) plus
-per-subagent `.log` files in `logs/`. The iter-3 `09-sumario.md`
-contains the final winner and convergence status.
+per-subagent `.log` files in `logs/`. The `09-sumario.md` contains
+the final winner and score.
 
 ## Cost estimate
 
-Approximate token usage across 3 iterations:
-- Per iteration: ~25,000 tokens (detailed proposal + 3 evaluations + improvements)
-- 3 iterations: ~75,000 tokens total
-- Cost (varies by provider): $0.20-$1.00
+Approximate token usage for a single run:
+- ~25,000 tokens (detailed proposal + 3 evaluations + improvements)
+- Cost (varies by provider): $0.10-$0.50
 
-For cheaper experiments, reduce `max_iteraciones` to 2 or increase `umbral_convergencia` to 1.0.
+For cheaper experiments, reduce `agentes_a_competir` to a smaller subset
+via project-level `orquestador.json`.
 
 ## Next steps
 
 After getting the winning proposal:
 
-1. **Read it**: `cat out/auth-jwt/iter-3/05-mejorada-mimo.md`
+1. **Read it**: `cat out/auth-jwt/05-mejorada-mimo.md`
 2. **Implement it**: follow the architecture and commands in the proposal
 3. **Test it**: use the sample curl commands to verify
-4. **Iterate manually**: if you want more improvements, run another `/orquestar-iterate` with a more detailed prompt
+4. **Re-run with feedback**: if you want more improvements, run another
+   `/orquestar` with a more detailed prompt that incorporates what you
+   learned from this run
 
 ## Variations to try
 
-- **Different models**: edit `orquestador.json` to add `opencode-go/claude-sonnet-4` to `modelos_a_competir` and create a matching agent
-- **Stricter validation**: set `"descalificar_fallida": true` in `orquestador.json`
+- **Different models**: edit `orquestador.json` to add another agent to
+  `agentes_a_competir` and create the matching `propuesta-{agent}.md`
+- **Stricter validation**: set `"descalificar_fallida": true` in
+  `orquestador.json`
 - **Smoke test mode**: set `"smoke_test": "auto"` for small prompts
-- **More iterations**: set `"max_iteraciones": 5` for complex prompts
+- **Integrated synthesis**: set `"step_5_modo": "sintesis_central"` to
+  produce one consolidated proposal instead of per-agent improvements

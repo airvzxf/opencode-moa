@@ -54,9 +54,6 @@
 
   "modelo_objetivo": "minimax-coding-plan/MiniMax-M3",
 
-  "max_iteraciones": 5,
-  "umbral_convergencia": 0.5,
-
   "validacion_empirica": false,
   "descalificar_fallida": false,
   "smoke_test": false,
@@ -65,8 +62,6 @@
   "step_1_agent_timeout_seconds": 600,
 
   "step_5_modo": "skip",
-  "sintesis_final": false,
-  "sintesis_final_modelo": "minimax-coding-plan/MiniMax-M3",
 
   "multi_eval": false,
   "multi_eval_modelos": [],

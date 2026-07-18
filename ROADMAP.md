@@ -33,12 +33,12 @@ agentes removed.
   `gtk4-overlay-test/` etc. across the filesystem in the v5
   experiment. Each subagent now writes cargo scaffolds, downloaded
   deps, compiled binaries, and bash session logs into a deterministic
-  location under `work/{id}/iter-{N}/{step-prefix}/` and
-  `logs/{id}/iter-{N}/{step-prefix}.log`. Naming rule mirrors the
+  location under `work/{id}/{step-prefix}/` and
+  `logs/{id}/{step-prefix}.log`. Naming rule mirrors the
   output file prefix (e.g. `01-propuesta-minimax-baseline-04` →
   `01-propuesta-minimax-baseline-04/`). See `opencode-moa/AGENTS.md`
   §12 for the full table. `--force` cleans all three siblings for
-  the iteration.
+  the run.
 - [x] **Run D validated `sintesis_central` + `validacion_empirica: true` end-to-end** on a 6-baseline minimum cohort (fib-rust-cli, 2026-07-13). This is the first run with the full pipeline (steps 1–10) executing without synthetic substitutions. Key empirical confirmations:
   - **§6.2 evidence at last:** integrated proposal 45/50 beats best original 44/50 by +1 point on a uniform-model 6-baseline cohort. First methodologically clean §6.2 evidence.
   - **§6.3 with uniform model:** 6 identical-input proposals converged on 10 ideas (4-6 of 6 majority on each). Cross-pollination is a property of LLM sampling temperature, not a property of model diversity. Refines §6.3.
@@ -86,7 +86,7 @@ agentes removed.
   Repeat fib-rust-cli with `step_5_modo: self_improve` on the same
   6-baseline cohort. Goal: gold-standard §6.2 validation comparing
   `sintesis_central` vs `self_improve × 6` on identical inputs. Cost:
-  ~2.5× Run D iter-1 (mostly the 6 self-improve calls).
+  ~2.5× Run D (mostly the 6 self-improve calls).
 - [ ] **NEW: Cross-domain Run D repeat (Run D §7.5b).** Pick a
   different prompt and run with the same 6-baseline cohort +
   `sintesis_central` + `validacion_empirica: true`. Goal: confirm
@@ -171,15 +171,15 @@ agentes removed.
 
 - [ ] **`idioma_output` config** — currently all file headers are in English. Add a config option to output headers in Spanish (or other languages) for users who prefer their native language.
 
-- [ ] **Cost estimation** — OpenCode session logs include token counts. Add a post-iteration cost estimator that summarizes the per-model token usage and approximate cost (requires user-provided pricing data).
+- [ ] **Cost estimation** — OpenCode session logs include token counts. Add a post-run cost estimator that summarizes the per-model token usage and approximate cost (requires user-provided pricing data).
 
-- [ ] **Git integration** — optional auto-commit of `out/{id}/iter-{N}/` after each iteration. Users can opt-in by adding `"git_autocommit": true` to `orquestador.json`. Useful for tracking iteration history.
+- [ ] **Git integration** — optional auto-commit of `out/{id}/` after each run. Users can opt-in by adding `"git_autocommit": true` to `orquestador.json`. Useful for tracking run history.
 
 - [ ] **Better error messages** — when a subagent fails, the error message should include enough context to debug (current model, current step, input file paths, etc.). Currently errors are minimal.
 
 ### Non-goals for v0.3
 
-- UI / web dashboard for viewing iterations (deferred to v0.4+)
+- UI / web dashboard for viewing run history (deferred to v0.4+)
 - Multi-machine resume (deferred to v0.5+)
 - Model performance benchmarks (separate project)
 
@@ -187,9 +187,9 @@ agentes removed.
 
 ### v0.4 — UI and ergonomics
 
-- [ ] **Web dashboard** — a simple HTML viewer for `out/{id}/iter-*/` that shows the flow visually (proposals → validations → evaluations → winner)
-- [ ] **Interactive re-run** — pick a step from a previous iteration and re-run only that step with feedback
-- [ ] **Diff view** — see what changed between iterations of the same `{id}`
+- [ ] **Web dashboard** — a simple HTML viewer for `out/{id}/` that shows the flow visually (proposals → validations → evaluations → winner)
+- [ ] **Interactive re-run** — pick a step from a previous run and re-run only that step with feedback
+- [ ] **Diff view** — see what changed between runs of the same `{id}`
 
 ### v0.5 — Distributed execution
 
@@ -216,7 +216,6 @@ agentes removed.
 
 These are ideas worth exploring but not committed:
 
-- **Auto-tuning the convergence threshold** — currently `umbral_convergencia` is static. Could be auto-tuned based on score variance across iterations.
 - **Prompt injection detection** — validate that user prompts don't contain malicious instructions targeting the agents.
 - **Cross-language prompts** — automatically translate the user prompt to the language each model performs best in, then translate outputs back.
 - **Federated evaluation** — distribute evaluation across multiple users to reduce individual bias (privacy-preserving).

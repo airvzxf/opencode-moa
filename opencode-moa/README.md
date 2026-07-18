@@ -30,7 +30,7 @@ ls ~/.config/opencode/agents/ | wc -l
 # Should show: 46 files (42 proposal agents + 4 meta-agents)
 
 ls ~/.config/opencode/commands/
-# Should show: orquestar.md, orquestar-iterate.md
+# Should show: orquestar.md
 
 cat ~/.config/opencode/orquestador.json | jq '.agentes_a_competir | length'
 # Should show: 42 entries (the v1.3 default roster)
@@ -61,7 +61,7 @@ Copy-Item opencode-moa\orquestador.json $env:USERPROFILE\.config\opencode\
 
 | File / group | Count | Purpose |
 |---|---:|---|
-| `agents/orquestador.md` | 1 | Primary agent. Coordinates 10 steps + iterate mode. |
+| `agents/orquestador.md` | 1 | Primary agent. Coordinates 10 steps. |
 | `agents/evaluador.md` | 1 | Subagent. Evaluates all proposals (single-model, temp 0.0). |
 | `agents/sintetizador.md` | 1 | Subagent. Classifies + integrates + selects winners. |
 | `agents/validador.md` | 1 | Subagent. Empirical validation, configurable via `validacion_empirica`. |
@@ -73,7 +73,6 @@ Copy-Item opencode-moa\orquestador.json $env:USERPROFILE\.config\opencode\
 | `agents/propuesta-minimax-T{05K50,10K200}.md` | 2 | Grupo C — temperature/top_k combinations. |
 | `agents/propuesta-{kimi,deepseek,deepseek-flash,glm,mimo,qwen37-plus}.md` | 6 | OpenCode Go agents included in the v1.3 default roster. |
 | `commands/orquestar.md` | 1 | Custom command: `/orquestar <prompt> <id>`. |
-| `commands/orquestar-iterate.md` | 1 | Custom command: `/orquestar-iterate <prompt> <id>`. |
 | `orquestador.json` | 1 | Config with `agentes_a_competir` (42 entries by default). |
 
 ## Project-level overrides (optional)
@@ -90,7 +89,7 @@ Project-level overrides take precedence over user-level (see [docs/installation.
 
 **Tip:** for the 2026-07-13 MiniMax sweep experiment, override at project
 level to keep `agentes_a_competir` to a small subset (e.g. only 5 agents)
-for fast iteration. The default 42-agent roster is intended for research
+for cheaper runs. The default 42-agent roster is intended for research
 runs and takes substantially longer than a small project-level override.
 
 ## Adding more agents (v1.3)
