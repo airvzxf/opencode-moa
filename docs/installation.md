@@ -328,10 +328,12 @@ rm -rf /path/to/project/.opencode/agents/{orquestador,propuesta-*,evaluador,sint
 rm -rf /path/to/project/.opencode/commands/{orquestar,orquestar-iterate}.md
 ```
 
-Your `out/{id}/` directories (containing past iterations) are NOT removed by uninstallation. Delete them manually if desired:
+Your `{id}/` directories (containing past runs, with the v1.6 layout
+`{id}/{subagent}/{proposal,work,log}/`) are NOT removed by
+uninstallation. Delete them manually if desired:
 
 ```bash
-rm -rf out/
+rm -rf {id}/
 ```
 
 ---

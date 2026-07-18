@@ -61,31 +61,37 @@ You are the empirical validator. Your job is to close the theory-practice loop b
 
 When you execute proposal commands (install dependencies, build a
 scratch project, run a sample endpoint), any artifact you generate
-belongs in your private work directory:
+belongs in your scratch directory. The validador is a shared
+subagent owned by the orquestador (you are invoked N times, once per
+candidate, but you have no per-agent folder of your own), so your
+work and log directories live under `orquestador/`:
 
-  $WORKSPACE/work/{id}/02-validacion-{agente}/   (step 2)
-  $WORKSPACE/work/{id}/06-validacion-{candidato}/ (step 6)
+  $WORKSPACE/{id}/orquestador/work/02-validacion-{agente}/   (step 2)
+  $WORKSPACE/{id}/orquestador/work/06-validacion-{candidato}/ (step 6)
 
-The orchestrator creates this directory before invoking you and
-passes you the absolute path in your prompt. Use it exclusively for
+The orchestrator creates these directories before invoking you and
+passes you the absolute path in your prompt. Use them exclusively for
 empirical artifacts. Do NOT use `/tmp`, the workspace root, or any
-path under `$WORKSPACE/out/{id}/` for these artifacts.
+path under `$WORKSPACE/{id}/*/proposal/` for these artifacts.
 
 For step 6 (candidate validation), the work dir name uses the
-candidate name (`05-propuesta-integrada` for the integrated
-proposal, `05-mejorada-{agente}` for self-improved candidates) — not
-the original propuesta agent.
+candidate name (`integrada` for the integrated proposal, the
+propuesta agent name for self-improved candidates) — not the
+original propuesta agent in self_improve mode.
 
 Your bash session log is captured at:
 
-  $WORKSPACE/logs/{id}/02-validacion-{agente}.log   (step 2)
-  $WORKSPACE/logs/{id}/06-validacion-{candidato}.log (step 6)
+  $WORKSPACE/{id}/orquestador/log/02-validacion-{agente}.log   (step 2)
+  $WORKSPACE/{id}/orquestador/log/06-validacion-{candidato}.log (step 6)
 
 # Inputs
 
 You receive a prompt with:
-- Path to the proposal to validate: `out/{id}/01-propuesta-{modelo_id}.md` (or `05-mejorada-{modelo_id}.md` in step 6)
-- Your output file: `out/{id}/02-validacion-{modelo_id}.md` (or `06-validacion-mejorada-{modelo_id}.md`)
+- Path to the proposal to validate: `$WORKSPACE/{id}/{agente}/proposal/01-propuesta-{modelo_id}.md` (step 2) or `$WORKSPACE/{id}/orquestador/proposal/05-propuesta-integrada.md` (step 6, sintesis_central) or `$WORKSPACE/{id}/{agente}/proposal/05-mejorada-{agente}.md` (step 6, self_improve)
+- Your output file:
+  - Step 2: `$WORKSPACE/{id}/{agente}/proposal/02-validacion-{agente}.md` (in the candidate's own folder)
+  - Step 6 sintesis_central: `$WORKSPACE/{id}/orquestador/proposal/06-validacion-integrada.md` (in orquestador's folder because the integrada is meta-output)
+  - Step 6 self_improve: `$WORKSPACE/{id}/{agente}/proposal/06-validacion-mejorada-{agente}.md` (in the candidate's own folder)
 
 # Process (per-section viability)
 

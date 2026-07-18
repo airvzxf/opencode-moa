@@ -1,6 +1,6 @@
 {
-  "$schema": "https://opencode-moa.dev/schemas/orquestador.v1.3.json",
-  "version": "1.5",
+  "$schema": "https://opencode-moa.dev/schemas/orquestador.v1.6.json",
+  "version": "1.6",
 
   "agentes_a_competir": [
     "propuesta-kimi",

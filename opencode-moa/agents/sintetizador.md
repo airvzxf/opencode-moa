@@ -15,27 +15,27 @@ You typically produce only one .md report per invocation and rarely
 need scratch space. If you do (e.g. a sample scaffold in step 5
 `sintesis_central`), write to your private work directory:
 
-  $WORKSPACE/work/{id}/04-clasificacion/             (step 4)
-  $WORKSPACE/work/{id}/05-propuesta-integrada/      (step 5 `sintesis_central`)
-  $WORKSPACE/work/{id}/08-ganador/                  (step 8)
+  $WORKSPACE/{id}/orquestador/work/04-clasificacion/             (step 4)
+  $WORKSPACE/{id}/orquestador/work/05-propuesta-integrada/      (step 5 `sintesis_central`)
+  $WORKSPACE/{id}/orquestador/work/08-ganador/                  (step 8)
 
 The orchestrator creates this directory before invoking you. Do NOT
 use `/tmp`, the workspace root, or any path under
-`$WORKSPACE/out/{id}/` for these files. Your bash session
+`$WORKSPACE/{id}/*/proposal/` for these files. Your bash session
 log is captured at:
 
-  $WORKSPACE/logs/{id}/04-clasificacion.log             (step 4)
-  $WORKSPACE/logs/{id}/05-propuesta-integrada.log      (step 5 `sintesis_central`)
-  $WORKSPACE/logs/{id}/08-ganador.log                  (step 8)
+  $WORKSPACE/{id}/orquestador/log/04-clasificacion.log             (step 4)
+  $WORKSPACE/{id}/orquestador/log/05-propuesta-integrada.log      (step 5 `sintesis_central`)
+  $WORKSPACE/{id}/orquestador/log/08-ganador.log                  (step 8)
 
 # Mode "classification" (step 4)
 
 Inputs:
-- `out/{id}/03-calificacion-evaluador.md` (evaluations)
-- `out/{id}/01-propuesta-*.md` (proposals)
-- `out/{id}/02-validacion-*.md` (validations, if exist)
+- `$WORKSPACE/{id}/orquestador/proposal/03-calificacion-evaluador.md` (evaluations)
+- `$WORKSPACE/{id}/*/proposal/01-propuesta-*.md` (proposals)
+- `$WORKSPACE/{id}/*/proposal/02-validacion-*.md` (validations, if exist)
 
-Output: `out/{id}/04-clasificacion.md`
+Output: `$WORKSPACE/{id}/orquestador/proposal/04-clasificacion.md`
 
 Process:
 1. Read evaluations
@@ -78,12 +78,12 @@ Output format:
 # Mode "integrated synthesis" (step 5, when step_5_modo = "sintesis_central")
 
 Inputs:
-- `out/{id}/01-propuesta-*.md` (12 originals)
-- `out/{id}/03-calificacion-evaluador.md` (evaluator feedback)
-- `out/{id}/04-clasificacion.md` (current ranking)
-- `out/{id}/02-validacion-*.md` (per-section viability, if exist)
+- `$WORKSPACE/{id}/*/proposal/01-propuesta-*.md` (12 originals)
+- `$WORKSPACE/{id}/orquestador/proposal/03-calificacion-evaluador.md` (evaluator feedback)
+- `$WORKSPACE/{id}/orquestador/proposal/04-clasificacion.md` (current ranking)
+- `$WORKSPACE/{id}/*/proposal/02-validacion-*.md` (per-section viability, if exist)
 
-Output: `out/{id}/05-propuesta-integrada.md`
+Output: `$WORKSPACE/{id}/orquestador/proposal/05-propuesta-integrada.md`
 
 Process:
 1. Read everything
@@ -148,13 +148,14 @@ section each informs.]
 # Mode "final selection" (step 8)
 
 Inputs:
-- `out/{id}/07-calificacion-final.md`
-- `out/{id}/05-mejorada-*.md` (if step_5_modo = self_improve)
-- `out/{id}/05-propuesta-integrada.md` (if step_5_modo = sintesis_central)
-- `out/{id}/04-clasificacion.md`
-- `out/{id}/06-validacion-*.md` (if exist)
+- `$WORKSPACE/{id}/orquestador/proposal/07-calificacion-final.md`
+- `$WORKSPACE/{id}/*/proposal/05-mejorada-*.md` (if step_5_modo = self_improve)
+- `$WORKSPACE/{id}/orquestador/proposal/05-propuesta-integrada.md` (if step_5_modo = sintesis_central)
+- `$WORKSPACE/{id}/orquestador/proposal/04-clasificacion.md`
+- `$WORKSPACE/{id}/*/proposal/06-validacion-*.md` and/or
+  `$WORKSPACE/{id}/orquestador/proposal/06-validacion-integrada.md` (if exist)
 
-Output: `out/{id}/08-ganador.md`
+Output: `$WORKSPACE/{id}/orquestador/proposal/08-ganador.md`
 
 Process:
 1. Read everything

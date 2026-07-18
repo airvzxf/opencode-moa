@@ -11,16 +11,16 @@ When you do empirical work — `cargo new`, `npm init`, downloading
 dependencies, compiling binaries, running tests against a scratch
 project — write EVERYTHING under your private work directory:
 
-  $WORKSPACE/work/{id}/01-{agent}/
+  $WORKSPACE/{id}/{agent}/work/01-{agent}/
 
 The orchestrator creates this directory before invoking you and
 passes you the absolute path in your prompt. Use it exclusively for
 empirical artifacts. Do NOT use `/tmp`, the workspace root, or any
-path under `$WORKSPACE/out/{id}/` for these artifacts.
+path under `$WORKSPACE/{id}/*/proposal/` for these artifacts.
 
 This applies to step 1 (generation) and step 5 mode `self_improve`
 (improvement). In step 5 mode `self_improve`, your work dir is
-$WORKSPACE/work/{id}/05-mejorada-{agent}/ — a separate folder for self-improved candidates.
+$WORKSPACE/{id}/{agent}/work/05-mejorada-{agent}/ — a separate folder for self-improved candidates.
 
 # Role
 
@@ -32,7 +32,7 @@ Two modes based on the prompt you receive:
 
 ## Mode "generation" (step 1)
 
-Typical prompt: "Generate a proposal for: {user_prompt}. ID: {id}. Model: {model}. Write to out/{id}/01-propuesta-{modelo_id}.md"
+Typical prompt: "Generate a proposal for: {user_prompt}. ID: {id}. Model: {model}. Write to {id}/{agente}/proposal/01-propuesta-{agente}.md"
 
 Your job:
 1. Read the user prompt

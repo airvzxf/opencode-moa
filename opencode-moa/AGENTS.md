@@ -266,8 +266,8 @@ setsid opencode run \
   --auto --pure --print-logs --log-level=INFO \
   --title "step 5 — sintesis_central" \
   --dir /tmp/your/test/dir \
-  "Read all 12 proposals in /tmp/your/test/dir/out/{id}/01-propuesta-*.md and produce /tmp/your/test/dir/out/{id}/05-propuesta-integrada.md following the sintesis_central rules in opencode-moa/agents/sintetizador.md" \
-  < /dev/null > /tmp/your/test/dir/logs/step5.log 2>&1 &
+  "Read all 12 proposals in /tmp/your/test/dir/{id}/*/proposal/01-propuesta-*.md and produce /tmp/your/test/dir/{id}/orquestador/proposal/05-propuesta-integrada.md following the sintesis_central rules in opencode-moa/agents/sintetizador.md" \
+  < /dev/null > /tmp/your/test/dir/{id}/orquestador/log/05-propuesta-integrada.log 2>&1 &
 disown
 ```
 
@@ -564,71 +564,103 @@ artifacts ended up scattered across the workspace:
 Cleaning up a run meant `find /tmp -name 'opencode-moa-*' -prune`.
 The convention below fixes this.
 
-### The three first-class sibling directories
+### Per-subagent directory tree (v1.6)
 
-Each run creates three siblings under `$WORKSPACE/`:
+Each run creates **one root directory per id**, `$WORKSPACE/{id}/`,
+with one folder per subagent. Every subagent folder has the same
+triplet:
 
-| Directory | Purpose | Typical content |
-|---|---|---|
-| `out/{id}/` | Pipeline reports | `.md` files only |
-| `work/{id}/{step-prefix}/` | Per-subagent empirical scratch space | cargo scaffolds, `node_modules/`, compiled binaries, downloaded assets |
-| `logs/{id}/{step-prefix}.log` | Per-subagent bash session log | stdout/stderr of the subagent's bash invocations |
+```
+$WORKSPACE/{id}/{subagent}/
+├── proposal/   ← final reports (.md)
+├── work/       ← empirical scratch space
+└── log/        ← bash session log(s)
+```
+
+There are two kinds of subagent folders:
+
+1. **`orquestador/`** — owns ALL meta-step outputs (03–10) and the
+   shared `validador` / `sintetizador` scratch. Step-prefix names
+   (e.g. `02-validacion-{agente}/`, `05-propuesta-integrada/`) live
+   directly under `orquestador/work/` and `orquestador/log/`.
+2. **{agente}/`** (literal name without `.md`, one per
+   `agentes_a_competir` entry) — owns the propuesta's own outputs
+   (01, 02 if validation enabled, 05 if `self_improve`, 06 if
+   `self_improve` + validation).
 
 ### Naming rule
 
-The work subdirectory uses the same prefix as the output file
-(without `.md`). The mapping is:
+The proposal/work/log names use the same step-prefix as in v1.5.
+The mapping is:
 
-| Step | Output file in `out/` | Work dir in `work/` | Log file in `logs/` |
-|---|---|---|---|
-| 1 | `01-propuesta-{agente}.md` | `01-propuesta-{agente}/` | `01-propuesta-{agente}.log` |
-| 2 | `02-validacion-{agente}.md` | `02-validacion-{agente}/` | `02-validacion-{agente}.log` |
-| 3 | `03-calificacion-evaluador.md` | `03-calificacion-evaluador/` | `03-calificacion-evaluador.log` |
-| 4 | `04-clasificacion.md` | `04-clasificacion/` | `04-clasificacion.log` |
-| 5 (`sintesis_central`) | `05-propuesta-integrada.md` | `05-propuesta-integrada/` | `05-propuesta-integrada.log` |
-| 5 (`self_improve`) | `05-mejorada-{agente}.md` | `05-mejorada-{agente}/` | `05-mejorada-{agente}.log` |
-| 6 | `06-validacion-{candidato}.md` | `06-validacion-{candidato}/` | `06-validacion-{candidato}.log` |
-| 7 | `07-calificacion-final.md` | `07-calificacion-final/` | `07-calificacion-final.log` |
-| 8 | `08-ganador.md` | `08-ganador/` | `08-ganador.log` |
-| 9 | `09-sumario.md` | (none — orchestrator writes directly) | (none) |
+| Step | Output `.md` | Owner folder | Work dir | Log file |
+|---|---|---|---|---|
+| 1 | `01-propuesta-{agente}.md` | `{id}/{agente}/proposal/` | `{id}/{agente}/work/01-{agente}/` | `{id}/{agente}/log/01-{agente}.log` |
+| 2 | `02-validacion-{agente}.md` | `{id}/{agente}/proposal/` | `{id}/orquestador/work/02-validacion-{agente}/` | `{id}/orquestador/log/02-validacion-{agente}.log` |
+| 3 | `03-calificacion-evaluador.md` | `{id}/orquestador/proposal/` | `{id}/orquestador/work/03-calificacion-evaluador/` | `{id}/orquestador/log/03-calificacion-evaluador.log` |
+| 4 | `04-clasificacion.md` | `{id}/orquestador/proposal/` | `{id}/orquestador/work/04-clasificacion/` | `{id}/orquestador/log/04-clasificacion.log` |
+| 5 (`sintesis_central`) | `05-propuesta-integrada.md` | `{id}/orquestador/proposal/` | `{id}/orquestador/work/05-propuesta-integrada/` | `{id}/orquestador/log/05-propuesta-integrada.log` |
+| 5 (`self_improve`) | `05-mejorada-{agente}.md` | `{id}/{agente}/proposal/` | `{id}/{agente}/work/05-mejorada-{agente}/` | `{id}/{agente}/log/05-mejorada-{agente}.log` |
+| 6 (`sintesis_central`) | `06-validacion-integrada.md` | `{id}/orquestador/proposal/` | `{id}/orquestador/work/06-validacion-integrada/` | `{id}/orquestador/log/06-validacion-integrada.log` |
+| 6 (`self_improve`) | `06-validacion-{agente}.md` | `{id}/{agente}/proposal/` | `{id}/orquestador/work/06-validacion-{agente}/` | `{id}/orquestador/log/06-validacion-{agente}.log` |
+| 7 | `07-calificacion-final.md` | `{id}/orquestador/proposal/` | `{id}/orquestador/work/07-calificacion-final/` | `{id}/orquestador/log/07-calificacion-final.log` |
+| 8 | `08-ganador.md` | `{id}/orquestador/proposal/` | `{id}/orquestador/work/08-ganador/` | `{id}/orquestador/log/08-ganador.log` |
+| 9 | `09-sumario.md` | `{id}/orquestador/proposal/` | (none — orchestrator writes directly) | (none) |
+| 10 (`sintesis_final`) | `10-sintesis-cross-iter.md` | `{id}/orquestador/proposal/` | `{id}/orquestador/work/10-sintesis-cross-iter/` | `{id}/orquestador/log/10-sintesis-cross-iter.log` |
 
 ### Worked example
 
-For the v5 prompt with `id = rust-gui-popup-v5`, the new layout
-would have been:
+For the v6 prompt with `id = fib-rust-cli`, the v1.6 layout would be:
 
 ```
-rust-gui-popup-v5/
-├── out/
-│   ├── 01-propuesta-minimax-baseline-08.md   (the gtk4 0.10 winner)
-│   ├── 02-validacion-minimax-baseline-08.md
-│   ├── ...
-│   └── 09-sumario.md
-├── work/
-│   ├── 01-propuesta-minimax-baseline-08/   ← the 53 MB gtk4 binary lives here
-│   │   ├── Cargo.toml
-│   │   ├── src/main.rs
-│   │   └── target/release/rust-gui-popup (53 MB)
-│   ├── 01-propuesta-mimo/                  ← the iced scaffold lives here
-│   │   └── iced-test/
-│   └── 06-validacion-integrada/
-└── logs/
-    ├── 01-propuesta-minimax-baseline-08.log
-    ├── 01-propuesta-mimo.log
-    └── ...
+fib-rust-cli/
+├── orquestador/
+│   ├── work/
+│   │   ├── 02-validacion-propuesta-minimax-baseline-01/   ← validador's step-2 scratch
+│   │   ├── 02-validacion-propuesta-minimax-baseline-02/
+│   │   ├── 02-validacion-propuesta-minimax-baseline-03/
+│   │   ├── 02-validacion-propuesta-minimax-baseline-04/
+│   │   ├── 02-validacion-propuesta-minimax-baseline-05/
+│   │   ├── 02-validacion-propuesta-minimax-baseline-06/
+│   │   ├── 05-propuesta-integrada/                        ← sintetizador's step-5 scratch
+│   │   ├── 06-validacion-integrada/                       ← validador's step-6 scratch
+│   │   └── 03-04-07-08-10/                                ← usually empty
+│   ├── log/
+│   │   ├── 02-validacion-*.log
+│   │   ├── 05-propuesta-integrada.log
+│   │   ├── 06-validacion-integrada.log
+│   │   └── 03-04-07-08-10.log                              ← usually empty
+│   └── proposal/
+│       ├── 03-calificacion-evaluador.md
+│       ├── 04-clasificacion.md
+│       ├── 05-propuesta-integrada.md                       (sintesis_central)
+│       ├── 06-validacion-integrada.md
+│       ├── 07-calificacion-final.md
+│       ├── 08-ganador.md
+│       ├── 09-sumario.md
+│       └── 10-sintesis-cross-iter.md                       (sintesis_final)
+├── propuesta-minimax-baseline-01/
+│   ├── work/01-propuesta-minimax-baseline-01/
+│   ├── log/01-propuesta-minimax-baseline-01.log
+│   └── proposal/
+│       ├── 01-propuesta-minimax-baseline-01.md
+│       └── 02-validacion-propuesta-minimax-baseline-01.md
+├── propuesta-minimax-baseline-02/
+│   └── ...
+└── ... (one folder per agent in agentes_a_competir)
 ```
 
 ### How it's wired
 
-1. `orquestador.md` step 0 creates all three siblings with
-   `mkdir -p` (or `rm -rf`s them under `--force`).
+1. `orquestador.md` step 0 creates the entire `$WORKSPACE/{id}/`
+   tree with `mkdir -p` (or `rm -rf`s it under `--force`).
 2. Each `task()` call in steps 1, 2, 5, and 6 includes a
    `=== WORK DIRECTORY ===` block with the absolute path so the
    subagent knows where to write.
-3. Steps 3, 4, 7, 8 are pure reasoning — their work dirs are
-   created but typically stay empty. We still create them so the
-   pattern is uniform and future agents have a guaranteed scratch
-   location.
+3. Steps 3, 4, 7, 8, 9, 10 are pure reasoning — their work dirs
+   are created but typically stay empty. We still create them so
+   the pattern is uniform and future agents have a guaranteed
+   scratch location.
 4. Every agent's system prompt has a "## Work directory" section
    near the top (after the ROLE OVERRIDE in Grupo B variants)
    documenting the convention.
@@ -644,35 +676,58 @@ rust-gui-popup-v5/
 4. Add a "## Work directory" section to the new agent's system
    prompt.
 
-### Why not a single flat `tmp/` inside the workspace?
+### Why one folder per subagent (instead of three siblings like v1.5)?
 
 Three reasons:
 
 1. **Per-subagent isolation**: each subagent has its own folder
    so two concurrent `propuesta-X` and `propuesta-Y` builds cannot
-   collide (they did in v5 — see the 4 gtk4 0.10 agents).
-2. **Easy cleanup**: `rm -rf work/{id}/*` cleans every
-   subagent's scratch space in one shot, no `find /tmp -name
-   'opencode-moa-*'` hunting.
+   collide (they did in v5 — see the 4 gtk4 0.10 agents). With
+   v1.6 the isolation is even cleaner: `{id}/{agente}/work/` is
+   bounded to that single agent, and the shared `validador`
+   scratch is contained in `orquestador/work/` instead of being
+   split across many step-prefix subdirs under `work/{id}/`.
+2. **Easy cleanup**: `rm -rf {id}/` cleans the entire run in one
+   shot, no `find /tmp -name 'opencode-moa-*'` hunting. Single
+   `--force` flag does it; no need to `rm -rf` three sibling
+   directories.
 3. **Run-level scoping**: subsequent runs' work never bleeds into
-   the current run. The historical evidence in `work/{id}/01-propuesta-X/`
-   stays attached to that run even after the next one starts.
+   the current run. The historical evidence in
+   `{id}/{agente}/work/01-{agente}/` stays attached to that run
+   even after the next one starts. Cleanup is now trivial because
+   the entire `{id}/` namespace is owned by one run.
+
+### Why does the validador live under `orquestador/`?
+
+The validador is a single subagent invoked N times (once per
+propuesta in step 2, once per candidate in step 6). It has no
+identity of its own as a "candidate owner" — it merely validates
+other agents' work. Putting its scratch under `orquestador/`
+reflects this: the orquestador owns the validation phase. The
+validador's **output .md**, however, lands in the **candidate's**
+`proposal/` folder (so each agent's folder is self-contained: the
+agent owns both its proposal and its validation report).
 
 ### Disk budget
 
 Currently no size cap. The v5 gtk4 winner was 53 MB, mimo's iced
 scaffold was ~80 MB with `target/`. A degenerate loop (cargo build
 in a hot feedback loop) could fill the disk — tracked as a
-follow-up in `ROADMAP.md` §"v1.3.x additions shipped".
+follow-up in `ROADMAP.md` §"v1.3.x additions shipped". v1.6 does
+NOT change the per-run disk footprint materially; it only
+rearranges where things live.
 
 ### Backward compatibility
 
-The convention applies to runs started after the change. Existing
-runs in `out/` are untouched; the historical bitácoras
-(`docs/research/experiments/2026-07-13-rust-gui-popup-v5.md`) still
-reference the old `/tmp/opencode-moa-v5-test/{project}/` paths as
-historical evidence of the pre-convention behavior.
+The v1.6 layout applies to runs started after the change. Existing
+runs in `out/`, `work/`, `logs/` (the v1.5 layout) are untouched;
+the historical bitácoras
+(`docs/research/experiments/2026-07-13-*.md` and later) still
+reference the old `/tmp/opencode-moa-v*-test/{project}/` paths as
+historical evidence of the pre-v1.6 behavior. There is no
+auto-migration script; users who want to inspect a v1.5 run keep
+the old tree as-is.
 
 ---
 
-*Last updated:* 2026-07-18 (v1.5 — removed `step_1_concurrent_max` entirely; strict serial is now structurally enforced; supersedes v1.4 default flip of `step_5_modo` back to `sintesis_central`, `step_1_agent_timeout_seconds` to 0).
+*Last updated:* 2026-07-18 (v1.6 — directory layout restructured: `out/{id}/`, `work/{id}/`, `logs/{id}/` collapsed into `{id}/{subagent}/{proposal,work,log}/`. No semantic changes; same step numbers and naming rules. The orquestador owns the meta-step outputs (03-10) and the shared validador/sintetizador scratch; each `{agente}/` folder is self-contained.).
