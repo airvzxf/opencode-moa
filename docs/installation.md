@@ -79,10 +79,10 @@ opencode
 In the OpenCode TUI:
 
 ```
-/orquestar --smoke-test=true "test" smoke
+/orquestar "Design a simple CLI tool that prints 'hello'" hello-cli
 ```
 
-If everything works, you'll see ~12 files generated in `out/smoke/iter-1/`.
+If everything works, you'll see ~12 files generated in `out/hello-cli/`.
 
 ---
 
@@ -108,7 +108,7 @@ cp /path/to/opencode-moa/opencode-moa/orquestador.json ./
 nano orquestador.json
 ```
 
-For example, change `"smoke_test": false` to `"smoke_test": "auto"` for this project only.
+For example, change `agentes_a_competir` to a smaller subset, or flip `validacion_empirica` to `true`, for this project only.
 
 ### Step 3: Run from project
 
@@ -155,7 +155,7 @@ The OpenCode web UI should already be running (default port 4096). Open `https:/
 Open the OpenCode web UI in your browser and run:
 
 ```
-/orquestar --smoke-test=true "test from vps" smoke-vps
+/orquestar "Design a small REST endpoint" hello-vps
 ```
 
 ### Updating later
@@ -273,18 +273,6 @@ If you want proposals marked ❌ NO VIABLE to be removed from the ranking:
 ```
 
 (Defaults to `false` to keep proposals with viable sections in the ranking.)
-
-### Enabling smoke test by default
-
-If you want every `/orquestar` to first run a smoke test:
-
-```json
-{
-  "smoke_test": true
-}
-```
-
-Or use the `"auto"` mode for heuristic-based detection.
 
 ---
 
@@ -427,7 +415,7 @@ opencode run \
   --pure \
   --print-logs \
   --dir /your/test/dir \
-  "/orquestar --smoke-test=true test smoke"
+  "/orquestar \"Design a REST API for inventory management\" auth-jwt"
 ```
 
 ### Subagent (validador / evaluador) hangs at step 2/3 waiting for permission
@@ -488,6 +476,6 @@ can be removed and the project-level config becomes sufficient again.
 ## Next steps
 
 - Read the [complete design proposal](../proposals/001-orquestador-nativo-opencode.md)
-- Try the [smoke test example](../../examples/smoke-test-colores.md)
+- Try the [REST API example](../../examples/auth-jwt-rest-api.md)
 - Review the [iterations analysis](../research/iterations-analysis.md)
 - Check the [changelog](../../CHANGELOG.md) and [roadmap](../../ROADMAP.md)

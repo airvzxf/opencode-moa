@@ -19,7 +19,6 @@
   - `umbral_convergencia`: **0.5**
   - `validacion_empirica`: **true** (validador enabled — first time documented with full end-to-end since Run B v0.3 where it was blocked by `bash: ask` permissions)
   - `descalificar_fallida`: **false**
-  - `smoke_test`: **false**
   - `step_1_concurrent_max`: **3**
   - `step_1_agent_timeout_seconds`: **600**
   - `step_5_modo`: **`sintesis_central`** (vs Run C v1.2.1 `skip` and Run B v0.3 `sintesis_central` with synthetic 03/04/06/07/08)
@@ -432,7 +431,6 @@ Each is a different failure mode with a different mitigation.
   "umbral_convergencia": 0.5,
   "validacion_empirica": true,
   "descalificar_fallida": false,
-  "smoke_test": false,
   "step_1_concurrent_max": 3,
   "step_1_agent_timeout_seconds": 600,
   "step_5_modo": "sintesis_central",

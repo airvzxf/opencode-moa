@@ -117,23 +117,18 @@ changing the default roster.
 
 ## After installation
 
-Try the smoke test with the full 42-agent roster:
+The full 42-agent roster is intended for research runs and can take
+substantially longer than a small project-level override. Output
+includes a `## Parameter validation report` section in
+`04-clasificacion.md` showing which parameter-sweep agents produced
+distinct outputs.
 
-```
-/orquestar --smoke-test=true "test" arco-iris-42
-```
-
-The full roster is intended for research runs and can take substantially
-longer than a small project-level override. Output includes a
-`## Parameter validation report` section in `04-clasificacion.md` showing
-which parameter-sweep agents produced distinct outputs.
-
-Or with a single-agent smoke test (faster, ~3 min):
+Or with a single-agent roster (faster, ~3 min):
 
 ```
 cp opencode-moa/orquestador.json /tmp/my-project/
 # Edit to set agentes_a_competir to just one agent
-/orquestar --smoke-test=true "test" smoke
+/orquestar "test" smoke
 ```
 
 See [../docs/proposals/001-orquestador-nativo-opencode.md](../docs/proposals/001-orquestador-nativo-opencode.md) for the complete design document.

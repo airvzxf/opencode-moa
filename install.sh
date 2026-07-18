@@ -67,6 +67,5 @@ echo
 echo "Next steps:"
 echo "  1. Verify: ls $CONFIG_DIR/agents/  (should show ${#AGENT_FILES[@]} files)"
 echo "  2. Open OpenCode in any project: opencode"
-echo "  3. Run smoke test: /orquestar --smoke-test=true \"test\" smoke"
 echo
 echo "For more info, see docs/installation.md"

@@ -59,12 +59,6 @@ From the OpenCode TUI:
 /orquestar "Design a REST API for inventory management with JWT auth" auth-jwt
 ```
 
-Or with the smoke test (validates the pipeline with a trivial prompt):
-
-```
-/orquestar --smoke-test=true "test" smoke
-```
-
 ### 3. Inspect results
 
 Each run produces THREE sibling directories — one for reports
@@ -115,7 +109,6 @@ opencode-moa/
 │   │   └── iterations-analysis.md         ← analysis of real-world multi-model iterations
 │   └── installation.md                    ← detailed installation guide
 ├── examples/
-│   ├── smoke-test-colores.md              ← minimal smoke test example
 │   └── auth-jwt-rest-api.md               ← full example
 └── opencode-moa/                          ← INSTALLABLE BUNDLE (copy this to ~/.config/opencode/)
     ├── README.md                          ← installation instructions for this bundle
@@ -156,17 +149,6 @@ A single evaluator (`evaluador`, using MiniMax-M3 with temperature 0.0) grades a
 
 By default, proposals with low viability stay in the ranking as ⚠️ warnings (with AP reduced). Set `descalificar_fallida: true` in `orquestador.json` to enable strict disqualification.
 
-### 4-layer smoke test control
-
-The smoke test (a trivial prompt that validates the pipeline) can be controlled via:
-
-1. Command flag (highest priority): `/orquestar --smoke-test=true "..." id`
-2. Project-level `./orquestador.json`: `"smoke_test": true`
-3. User-level `~/.config/opencode/orquestador.json`: `"smoke_test": "auto"`
-4. Default fallback: `false`
-
-The `"auto"` mode lets the orchestrator decide based on prompt length and complexity.
-
 ## Design decisions
 
 ### Why multi-model only for proposals?
@@ -189,13 +171,13 @@ Complex proposals have multiple technical sections (installation, API endpoints,
 OpenCode natively merges configurations from multiple sources. This lets you:
 
 - Install `opencode-moa` once in `~/.config/opencode/` (user-level, available everywhere)
-- Override specific fields per-project (e.g., disable smoke test in production projects)
+- Override specific fields per-project (e.g., disable validation in production projects)
 
 The merge is automatic and non-conflicting keys are preserved.
 
 ## Configuration
 
-The `orquestador.json` file has 14 configurable fields plus `$schema`:
+The `orquestador.json` file has 13 configurable fields plus `$schema`:
 
 | Field | Type | Default | Description |
 |---|---|---|---|
@@ -204,7 +186,6 @@ The `orquestador.json` file has 14 configurable fields plus `$schema`:
 | `modelo_objetivo` | string | required | Target model for meta-agents |
 | `validacion_empirica` | boolean | false | Enable validation steps 2 and 6 |
 | `descalificar_fallida` | boolean | false | Enable strict disqualification |
-| `smoke_test` | boolean | false | Smoke-test mode |
 | `step_1_concurrent_max` | integer | 3 | Proposal batch size |
 | `step_1_agent_timeout_seconds` | integer | 600 | Per-agent timeout; 0 means unlimited |
 | `step_5_modo` | string | `skip` | `sintesis_central`, `self_improve`, or `skip` |
@@ -226,7 +207,7 @@ See [`docs/proposals/001-orquestador-nativo-opencode.md`](docs/proposals/001-orq
 - 🧪 [v8 experiment bitácora](docs/research/experiments/2026-07-16-voxora-kernels-v8.md) — 22-agent configured CUDA-kernel compatibility cohort, source-attributed integration, byte-precise PTX validation
 - 📄 [Paper draft (DRAFT v0.5)](docs/papers/DRAFT-multi-model-orchestration.md) — Run A–F synthesis with cost calibration, minimum-cohort evidence, Run E counter-evidence, and Run F CUDA-kernel results
 - 📦 [Installation guide](docs/installation.md) — detailed install instructions for local, VPS, Docker, etc.
-- 🧪 [Examples](examples/) — minimal smoke test and full REST API example
+- 🧪 [Examples](examples/) — full REST API example with orchestrator workflow
 - 📝 [Changelog](CHANGELOG.md) — version history, Run E, and Run F experiment records
 - 🗺️ [Roadmap](ROADMAP.md) — future plans
 

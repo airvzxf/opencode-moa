@@ -371,7 +371,7 @@ Esto tiene precedencia sobre la user-level (ver sección 6).
 ### 5.3 Híbrido (recomendado)
 
 - **User-level**: agents y commands base (los 7 agentes + 2 comandos + orquestador.json por defecto).
-- **Project-level**: solo `./orquestador.json` con overrides (ej. cambiar `smoke_test`, `modelos_a_competir`, etc.).
+- **Project-level**: solo `./orquestador.json` con overrides (ej. cambiar `modelos_a_competir`, etc.).
 
 Así puedes tener una config global razonable y ajustarla por proyecto.
 
@@ -408,7 +408,7 @@ opencode command list
 
 ### 6.1 Precedencia (mayor a menor)
 
-1. **Argumento runtime** del comando (ej. `/orquestar --smoke-test=true`).
+1. **Argumento runtime** del comando (ej. `/orquestar --force`).
 2. **`./orquestador.json`** (project-level, si existe).
 3. **`~/.config/opencode/orquestador.json`** (user-level).
 4. **Defaults del orquestador** (valores hardcoded como fallback final).
@@ -427,7 +427,6 @@ Al iniciar, lee la configuración en este orden (último gana):
    - umbral_convergencia = 0.5
    - validacion_empirica = true
    - descalificar_fallida = false   # V5: opt-in
-   - smoke_test = false
 
 2. Lee ~/.config/opencode/orquestador.json (si existe) — MERGE con defaults
    - Solo las claves presentes en el JSON sobrescriben los defaults
@@ -437,7 +436,7 @@ Al iniciar, lee la configuración en este orden (último gana):
    - Solo las claves presentes sobrescriben
 
 4. Parsea $ARGUMENTS del comando — MERGE final
-   - Flags como --smoke-test=true, --max-iter=5, etc.
+   - Flags como --force, --max-iter=5, etc.
    - Solo aplica si el flag está presente
 
 5. Valida el resultado final
@@ -460,15 +459,13 @@ User-level `~/.config/opencode/orquestador.json`:
   "max_iteraciones": 3,
   "umbral_convergencia": 0.5,
   "validacion_empirica": true,
-  "descalificar_fallida": false,
-  "smoke_test": false
+  "descalificar_fallida": false
 }
 ```
 
 Project-level `./orquestador.json` (opcional, override solo de algunas claves):
 ```json
 {
-  "smoke_test": "auto",
   "umbral_convergencia": 0.3,
   "descalificar_fallida": true
 }
@@ -483,16 +480,13 @@ Merge final (lo que el orquestador usa):
   "max_iteraciones": 3,                  // del user-level (no override)
   "umbral_convergencia": 0.3,            // del project-level (override)
   "validacion_empirica": true,           // del user-level
-  "descalificar_fallida": true,          // del project-level (override)
-  "smoke_test": "auto"                   // del project-level (override)
+  "descalificar_fallida": true           // del project-level (override)
 }
 ```
 
-Argumento runtime (override final): `/orquestar --smoke-test=false "..." id`:
+Argumento runtime (override final): `/orquestar --force "..." id`:
 ```json
 {
-  ...
-  "smoke_test": false                    // del argumento (override final)
   ...
 }
 ```
@@ -516,8 +510,7 @@ Argumento runtime (override final): `/orquestar --smoke-test=false "..." id`:
   "max_iteraciones": 3,
   "umbral_convergencia": 0.5,
   "validacion_empirica": true,
-  "descalificar_fallida": false,
-  "smoke_test": false
+  "descalificar_fallida": false
 }
 ```
 
@@ -532,7 +525,6 @@ Argumento runtime (override final): `/orquestar --smoke-test=false "..." id`:
 | `umbral_convergencia` | number (0.0-50.0) | 0.5 | Mejora mínima de score entre iteraciones |
 | `validacion_empirica` | boolean | true | Habilita pasos 2 y 6 (validación con bash + webfetch) |
 | `descalificar_fallida` | boolean | false | **V5: opt-in**. Si true, propuestas ❌ NO VIABLE son descalificadas |
-| `smoke_test` | boolean \| "auto" | false | **V7**. true/false/"auto" |
 
 ### 7.3 Validación al inicio (paso 0)
 
@@ -541,7 +533,6 @@ Argumento runtime (override final): `/orquestar --smoke-test=false "..." id`:
 3. Verifica que `max_iteraciones >= 1 && <= 10`.
 4. Verifica que `umbral_convergencia >= 0.0 && <= 50.0`.
 5. Verifica que `descalificar_fallida` sea boolean.
-6. Verifica que `smoke_test` sea boolean o `"auto"`.
 7. Para cada modelo en `modelos_a_competir`, deriva `id_corto` y verifica con `glob` que existe `.opencode/agents/propuesta-{id_corto}.md` o `~/.config/opencode/agents/propuesta-{id_corto}.md`.
 8. Si todo OK, crea `out/{id}/iter-{N}/` con `bash mkdir -p`.
 
@@ -594,7 +585,7 @@ You are the orchestrator of a multi-model competition. Your job is to coordinate
 1. Read $ARGUMENTS (from command /orquestar or /orquestar-iterate)
    - $1 = user prompt
    - $2 = id (optional; if missing, slugify $1)
-   - Additional flags: --smoke-test={true|false|auto}, --max-iter=N, --convergence=X, --force
+   - Additional flags: --max-iter=N, --convergence=X, --force
 2. Validate id: must match ^[a-z0-9][a-z0-9-]{2,29}$
 3. Apply merge of configuration (see section 6):
    - Start with hardcoded defaults
@@ -797,16 +788,7 @@ After each step:
 - If a subagent file is missing, abort with message from section 7.4.
 - If max_iter is reached in iterate mode, stop and write final summary.
 
-## Smoke test support
-
-If `--smoke-test=true` in $ARGUMENTS, OR if merged config has `smoke_test: true`:
-- Replace user_prompt with "List the 7 colors of the rainbow in order"
-- This validates the pipeline without spending many tokens
-
-If `smoke_test: "auto"`:
-- If user_prompt length < 50 chars AND doesn't contain "design" or "implement" or "build": use smoke test
-- Otherwise: use real prompt
-```
+## (Fin del bloque de inicialización)
 
 ### 8.2 `agents/propuesta-{modelo}.md` (subagent per model)
 
@@ -1341,7 +1323,6 @@ Arguments:
 - $2 = id (optional; if missing, the orchestrator slugifies $1)
 
 Optional flags (parsed by the orchestrator):
-- --smoke-test={true|false|auto} — overrides smoke_test from config
 - --max-iter=N — overrides max_iteraciones
 - --convergence=X — overrides umbral_convergencia
 - --force — deletes out/{id}/iter-{N}/ before starting
@@ -1357,7 +1338,6 @@ Behavior:
 Examples:
 /orquestar "Design a REST API for inventory management with JWT auth" auth-jwt
 /orquestar "List the 7 colors of the rainbow in order"  # id auto-slugified: "list-the-7-colors"
-/orquestar --smoke-test=true "Test the pipeline" smoke
 /orquestar --force "Redo the calculation" calc-v2
 
 Expected output:
@@ -1882,73 +1862,7 @@ This is **optional**. The proposal does NOT require it.
 
 ---
 
-## 17. Smoke test con 4 capas (V6, V7)
-
-### 17.1 Modos aceptados
-
-```json
-{
-  "smoke_test": true | false | "auto"
-}
-```
-
-- `true`: always execute smoke test (prompt dummy)
-- `false`: never execute smoke test
-- `"auto"`: the orchestrator decides based on heuristic
-
-### 17.2 Precedencia de 4 capas
-
-1. **Argumento runtime** (highest priority): `/orquestar --smoke-test=true "..." id`
-2. **Project-level orquestador.json**: `./orquestador.json` with `"smoke_test": true`
-3. **User-level orquestador.json**: `~/.config/opencode/orquestador.json` with `"smoke_test": "auto"`
-4. **Default fallback**: `false` (no smoke test)
-
-### 17.3 Heurística para `"auto"`
-
-The orchestrator uses this heuristic when `smoke_test == "auto"`:
-- If user prompt < 50 chars AND doesn't contain "design" / "implement" / "build" / "create": use smoke test
-- Otherwise: use real prompt
-
-Examples:
-| Prompt | Auto decision |
-|---|---|
-| "List 7 colors" | Smoke test (short, simple) |
-| "Design REST API with JWT" | Real flow (contains "design", complex) |
-| "Hello world" | Smoke test (trivial) |
-| "Calculate factorial of N" | Real flow (50+ chars or algorithm) |
-
-### 17.4 Caso de uso para VPS
-
-El usuario usa OpenCode web desde VPS. Para configurar el smoke test desde VPS vía SSH:
-
-```bash
-# Conectarse al VPS
-ssh user@vps
-
-# Editar config user-level
-nano ~/.config/opencode/orquestador.json
-# Cambiar "smoke_test": false → "smoke_test": "auto"
-
-# O editar config project-level (afecta solo este proyecto)
-nano ./orquestador.json
-# Agregar "smoke_test": true
-```
-
-### 17.5 Cómo lo procesa el orquestador
-
-Already detailed in section 8.1 system prompt:
-
-```markdown
-## Smoke test
-
-If --smoke-test=true in $ARGUMENTS, OR if merged config has smoke_test: true:
-- Replace user_prompt with "List the 7 colors of the rainbow in order"
-- This validates the pipeline without spending many tokens
-
-If smoke_test: "auto":
-- If user_prompt length < 50 chars AND doesn't contain "design" or "implement" or "build": use smoke test
-- Otherwise: use real prompt
-```
+## 17. (V6, V7 — eliminada en revisión posterior)
 
 ---
 

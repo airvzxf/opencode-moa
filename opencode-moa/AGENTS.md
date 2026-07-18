@@ -478,14 +478,15 @@ The sintetizador (step 4) is then asked to aggregate this into a
 table in `04-clasificacion.md` (section `## Parameter validation
 report`).
 
-**Triple validation strategy:**
+**Validation strategy:**
 
 1. **Per-proposal report** — the agent itself logs declared vs
    observed parameters in its output.
-2. **Round-1 smoke test** — at the smoke-test prompt
-   ("List the 7 colors of the rainbow"), T00 (greedy) should produce
-   identical responses across 10 proposals, T15 (extreme) should
-   diverge. If not, MiniMax is ignoring the parameter.
+2. **Baseline-cohort cross-check** — `propuesta-minimax-baseline-{01..15}`
+   share identical declared parameters (T=0.7). Their outputs should
+   cluster tightly on identical prompts, while `propuesta-minimax-T15`
+   (extreme temperature) diverges from the cluster. If baselines
+   diverge as much as T15, MiniMax is ignoring the parameter.
 3. **Sintetizador table** — `04-clasificacion.md` aggregates the
    per-proposal reports and ranks proposals by their parameter
    profile.

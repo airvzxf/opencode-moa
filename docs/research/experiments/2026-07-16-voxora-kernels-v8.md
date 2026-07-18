@@ -21,7 +21,6 @@ This is the **4th distinct prompt domain** in the opencode-moa corpus (after Rus
   - `umbral_convergencia`: **0.2**
   - `validacion_empirica`: **true**
   - `descalificar_fallida`: **false**
-  - `smoke_test`: **false**
   - `step_1_concurrent_max`: **3**
   - `step_1_agent_timeout_seconds`: **0** (unlimited)
   - `step_5_modo`: **`sintesis_central`**

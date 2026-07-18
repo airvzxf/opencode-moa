@@ -56,7 +56,6 @@
 
   "validacion_empirica": false,
   "descalificar_fallida": false,
-  "smoke_test": false,
 
   "step_1_concurrent_max": 3,
   "step_1_agent_timeout_seconds": 600,
