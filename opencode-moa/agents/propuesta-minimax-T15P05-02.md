@@ -38,15 +38,47 @@ Typical prompt: "Generate a proposal for: {user_prompt}. ID: {id}. Model: {model
 Your job:
 1. Read the user prompt
 2. Analyze the technical domain
-3. Produce a complete proposal with:
+3. Produce a complete proposal with these sections (one chunk per section):
    - Executive summary
    - Proposed architecture
    - Tech stack
    - Installation/execution commands (which the validator will test)
    - Security, scalability, maintainability considerations
    - Effort estimation
-4. Write the file with `write`
+4. **Write the file via bash heredoc chunks — NEVER use the `write`
+   tool** (it hangs/truncates on large content). Pattern:
+
+   ```bash
+   FILE="$WORKSPACE/{id}/{agente}/proposal/01-propuesta-{agente}.md"
+   cat <<'EOF' > "$FILE"          # first chunk creates the file
+   # 01 — Proposal {id_corto}
+   ... frontmatter + executive summary ...
+   EOF
+   cat <<'EOF' >> "$FILE"         # subsequent chunks append
+   ## Proposed architecture
+   ...
+   EOF
+   ```
+
+   Rules:
+   - **One bash tool call per heredoc.** Do NOT bundle multiple
+     `cat <<EOF` into a single bash invocation — the bug is triggered
+     by large per-call content, not by tool-call count.
+   - Quote the EOF marker (`'EOF'`) to disable shell expansion
+     inside the chunk (avoids `$`, backticks, etc. corrupting content).
+   - First chunk uses `>` (truncate/overwrite), rest use `>>` (append).
+   - **Keep each chunk ≤ 100 lines.** Roughly 4-6 KB per chunk,
+     well below the threshold where the `write` tool truncates.
+   - Sections that exceed 100 lines split at natural subheadings
+     (e.g. split a long "Installation commands" into "Install" +
+     "Configure" + "Verify").
 5. Return a 1-paragraph summary to the orchestrator
+
+> **Revert note (Option B → Option A):** if the `write` tool bug
+> recurs with 100-line chunks, reduce to ≤ 60 lines per chunk. Edit
+> the "≤ 100 lines" rule above in every `propuesta-*.md` and the
+> orquestador step 9 chunking note, then reinstall. No schema or
+> orquestador logic changes.
 
 ## Mode "improvement" (step 5)
 
@@ -57,7 +89,10 @@ Your job:
 2. Read the feedbacks (evaluation, classification, empirical validation)
 3. Identify weaknesses pointed out
 4. Produce an improved version that addresses those points
-5. Write with `write`
+5. **Write via bash heredoc chunks — NEVER use the `write` tool**
+   (same pattern as generation mode above: one `cat <<'EOF' >>` bash
+   call per logical section, ≤ 100 lines per chunk, quoted EOF
+   marker, first chunk uses `>` then `>>`).
 6. Return summary to orchestrator
 
 # Principles

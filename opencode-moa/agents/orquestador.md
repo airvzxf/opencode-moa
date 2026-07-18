@@ -899,7 +899,9 @@ Step 8: select winner from all candidates (originals + integrada and/or mejorada
 
 ## Step 9 — Summary
 
-The orchestrator writes this itself with `write` (no subagent), to:
+The orchestrator writes this itself via bash heredoc chunks (no
+subagent, **NEVER the `write` tool** — it hangs/truncates on large
+content), to:
 `$WORKSPACE/{id}/orquestador/proposal/09-sumario.md`.
 Content includes:
 - Final score (extracted from 08-ganador.md)
@@ -909,6 +911,18 @@ Content includes:
 - Cost attribution table (if step_5_modo = sintesis_central: list each
   subagent that ran and its estimated share of total cost — best effort
   approximation from session telemetry; mark estimates clearly)
+
+**Chunking strategy:** one `cat <<'EOF' >>` bash tool call per major
+section listed above; first call uses `>` to create the file, rest
+use `>>` to append. Quote the EOF marker (`'EOF'`) to disable shell
+expansion inside the chunk. Keep each chunk ≤ 100 lines.
+
+> **Revert note (Option B → Option A):** if the `write` tool bug
+> recurs with 100-line chunks (typically > ~8 KB content per chunk),
+> reduce to ≤ 60 lines per chunk. The change is purely the line
+> budget above + the same number in every `propuesta-*.md` agent
+> prompt. No schema, no permission, no orquestador logic changes.
+> Edit the relevant number in each prompt, reinstall, done.
 
 ## Empirical validation and permissions
 
