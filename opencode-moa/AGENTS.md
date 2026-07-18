@@ -57,11 +57,11 @@ restore of `propuesta-minimax-maintainable` (v1.3.1 addendum).
 - **Total:** ~$2.24 vs $4.60 (–$2.36, –51%)
 - Cache hit rate: ~91% of input tokens served from cache (the dominant cost-optimization factor)
 
-### Wall-clock estimate (per run, at step_1_concurrent_max=3)
+### Wall-clock estimate (per run, at step_1_concurrent_max=1)
 
-- Step 1: 42 agentes / 3 concurrent = 14 batches × ~9 min = ~126 min (vs 165 min for 52-agent)
+- Step 1: 42 agentes / 1 concurrent = 42 batches × ~3 min = ~126 min (serialised; well under Max-tier ceiling)
 - Steps 3-9: ~30 min (unchanged)
-- **Total:** ~156 min (vs 200 min, –22%). `max_wall_clock_minutes: 0` leaves the run unlimited by default.
+- **Total:** ~156 min (unchanged; batches run faster since no shared-quota contention, but there are 3× more of them). `max_wall_clock_minutes: 0` leaves the run unlimited by default.
 
 ### Drop rationale (why these specific agents were removed)
 
@@ -423,23 +423,25 @@ sustained**. Bursting more risks hitting the 5-hour rolling quota
 or getting throttled by the gateway. The user's plan is on Max tier
 ($50/month, 5.1B tokens/month, 4-5 concurrent).
 
-v1.2 introduces `step_1_concurrent_max` (default 3). The orchestrator
+v1.2 introduces `step_1_concurrent_max` (default 1 = strict serial; v1.4
+changed from default 3). The orchestrator
 uses the merged configuration value as the batch size. Every step 1
 response must contain exactly
 `min(step_1_concurrent_max, remaining_agents)` sibling `task()` calls;
 those siblings run in parallel, and the next batch waits for the whole
 current batch to return:
 
-- 42 agents / 3 per batch = 14 batches
-- Each response launches exactly 3 siblings, except the final partial batch
+- 42 agents / 1 per batch = 42 batches
+- Each response launches exactly 1 sibling
 - Each batch waits for completion before the next launches
-- Peak concurrent MiniMax agents: 3 in step 1, +1 evaluador at step
-  3 transition = 4 (within Max tier ceiling)
-- Step 1 wall time: ~21 min estimated (vs ~6 min unbounded)
+- Peak concurrent MiniMax agents: 1 in step 1, +1 evaluador at step
+  3 transition = 2 (well within Max tier ceiling of 4-5)
+- Step 1 wall time: ~126 min estimated (vs ~6 min unbounded at batch=42)
 
-`step_1_agent_timeout_seconds` (default 600) hard-caps each
-propuesta subagent. If a subagent exceeds 10 min, it is ABORTED and
-the batch continues with whatever proposals did complete.
+`step_1_agent_timeout_seconds` (default 0 = unlimited; v1.4 changed
+from default 600) bounds each propuesta subagent. If a subagent
+exceeds the timeout, it is ABORTED and the batch continues with
+whatever proposals did complete.
 
 ### v1.2.1 STRICT SERIALIZATION RULE
 
@@ -461,6 +463,15 @@ could exceed the Max-tier ceiling. The fix:
 - `step_5_modo: sintesis_central` default was changed to `skip`
   (see v1.2.1 §1 patch notes) because the integrated synthesis call
   was the most likely trigger of the post-step-1 hang.
+  **Reverted in v1.4 (2026-07-18):** the hang was later attributed to
+  cross-step LLM batching rather than to the integrator itself, and the
+  corpus of end-to-end runs since (Run D fib-rust-cli, Run E
+  moodle-quiz-extractor, Run F voxora-kernels) shows `sintesis_central`
+  wins on quality in some cohorts and loses in others. Net effect is
+  positive — the integrator consolidates the field — so the default is
+  flipped back to `sintesis_central`. With `step_1_concurrent_max: 1`
+  (also v1.4), the cross-step batching that triggered the v1.2.1 hang
+  is now structurally impossible.
 
 ### Parameter validation report (`param_validation_report`)
 
@@ -665,4 +676,4 @@ historical evidence of the pre-convention behavior.
 
 ---
 
-*Last updated:* 2026-07-13 (v1.3 revision + work-dir convention applied).
+*Last updated:* 2026-07-18 (v1.4 — default flip of `step_5_modo` back to `sintesis_central`, `step_1_concurrent_max` to 1, `step_1_agent_timeout_seconds` to 0).

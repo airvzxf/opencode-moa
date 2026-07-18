@@ -207,5 +207,9 @@ After getting the winning proposal:
   `agentes_a_competir` and create the matching `propuesta-{agent}.md`
 - **Stricter validation**: set `"descalificar_fallida": true` in
   `orquestador.json`
-- **Integrated synthesis**: set `"step_5_modo": "sintesis_central"` to
-  produce one consolidated proposal instead of per-agent improvements
+- **Step 5 mode (default: `sintesis_central` since v1.4)**: the
+  orchestrator produces one consolidated proposal
+  (`out/{id}/05-propuesta-integrada.md`) by default. To opt out, set
+  `"step_5_modo": "self_improve"` to produce per-agent improvements
+  instead, or `"step_5_modo": "skip"` to skip step 5 entirely and rank
+  the 12 originals directly.

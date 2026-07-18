@@ -80,13 +80,14 @@ pure reasoning and only produce one .md).
       - modelo_objetivo (string) — required
       - validacion_empirica (bool) — default FALSE (changed from TRUE in v1.1; see opencode bug #35073)
       - descalificar_fallida (bool) — default false
-      - step_1_concurrent_max (int) [NEW v1.2] — default 3 (protect MiniMax tier concurrency cap)
-      - step_1_agent_timeout_seconds (int) [NEW v1.2] — default 600 (hard cap per propuesta subagent)
+      - step_1_concurrent_max (int) [NEW v1.2] — default 1 (strict serial; v1.4 changed from 3)
+      - step_1_agent_timeout_seconds (int) [NEW v1.2] — default 0 (unlimited; v1.4 changed from 600)
       - step_5_modo (string) [NEW v1.1] — "sintesis_central" | "self_improve" | "skip"
-                                    default "skip" (changed v1.2.1: "sintesis_central"
-                                    triggers an intermittent orchestrator hang after
-                                    step 1 with 5+ agents; the user must opt-in
-                                    explicitly via project-level orquestador.json)
+                                    default "sintesis_central" (v1.4 reverted from "skip";
+                                    the v1.2.1 hang was attributed to cross-step LLM
+                                    batching, not the integrator — and with
+                                    step_1_concurrent_max: 1 that batching is now
+                                    structurally impossible)
       - multi_eval (bool) [NEW v1.1] — default false (single-eval remains default)
       - multi_eval_modelos (array<string>) [NEW v1.1] — empty by default
       - max_wall_clock_minutes (int) [NEW v1.1] — default 0 (unlimited; positive values opt into a global time limit)
@@ -225,9 +226,9 @@ When merging, the hardcoded v1.2 defaults before any JSON override are:
   "modelo_objetivo": "minimax-coding-plan/MiniMax-M3",
   "validacion_empirica": false,
   "descalificar_fallida": false,
-  "step_1_concurrent_max": 3,
-  "step_1_agent_timeout_seconds": 600,
-  "step_5_modo": "skip",
+  "step_1_concurrent_max": 1,
+  "step_1_agent_timeout_seconds": 0,
+  "step_5_modo": "sintesis_central",
   "multi_eval": false,
   "multi_eval_modelos": [],
   "max_wall_clock_minutes": 0,
@@ -251,12 +252,11 @@ When merging, the hardcoded v1.2 defaults before any JSON override are:
 The simplest mental model: imagine the entire roster as a single
 assistant response that contains N sibling `task()` calls, where N
 equals `len(agentes_a_competir)`. That mental model is correct up to
-the concurrency cap. With `step_1_concurrent_max: 3`, slice those N
-calls into chunks of 3 and emit each chunk as a separate response.
-Each chunk runs all 3 calls **in parallel** as true siblings — they
-start at the same instant, share the same response turn, and return
-together. NEVER issue one `task()`, wait for its result, then issue
-the next `task()` inside the same batch. NEVER add text, logs, or
+the concurrency cap. With `step_1_concurrent_max: 1`, each batch
+contains a single sibling `task()` call and emits N separate
+responses. Each call runs **in isolation** — it starts, finishes, and
+the next response picks up the next agent. NEVER issue more than
+`step_1_concurrent_max` siblings in one response. NEVER add text, logs, or
 markdown between siblings in the same batch.
 
 **ANTI-TRUNCATION CONTRACT (2026-07-13):** the response that contains
@@ -294,13 +294,12 @@ Both blocks must be separate responses. Status belongs to the
 previous response. Tool calls belong to this response.
 
 **v1.2 change:** step 1 launches subagents in **batches of
-`step_1_concurrent_max`** (default 3). This protects the user's
-MiniMax Token Plan tier (Max tier = 4-5 concurrent agents sustained).
-With 40 agents in the roster, step 1 spans 14 batches of ~90s each
-= ~21 min wall time. Peak concurrent MiniMax agents never exceeds
-`step_1_concurrent_max + 1` (the +1 accounts for the meta-agents
-spawned in subsequent steps; e.g. 3 propuesta + 1 evaluador = 4,
-just under the Max tier ceiling of 4-5).
+`step_1_concurrent_max`** (default 1 = strict serial). This protects the user's
+MiniMax Token Plan tier (Max tier = 4-5 concurrent agents sustained) at the
+most conservative end: peak concurrent MiniMax agents never exceeds 1 in
+step 1 (+ 1 evaluador at step 3 transition = 2, well under the Max tier
+ceiling of 4-5). With 40 agents in the roster, step 1 spans 40 batches
+of ~90s each ≈ ~60 min wall time — slowest option, lowest quota pressure.
 
 **Batch loop:**
 
@@ -539,8 +538,9 @@ and breaks parallelism. Either put the log line at the END of the
 previous response (after the previous batch returned) or skip it.
 
 This guarantees peak concurrency during step 1 equals
-`step_1_concurrent_max` (typically 3) and drops to 1 between
-numbered steps, which is exactly the Max-tier ceiling.
+`step_1_concurrent_max` (default 1, strict serial) and drops to 1
+between numbered steps, which is well below the Max-tier ceiling
+of 4-5 concurrent agents.
 
 **Other critical notes:**
 - All `task()` calls of a single batch MUST be in the SAME response,
@@ -550,8 +550,8 @@ numbered steps, which is exactly the Max-tier ceiling.
 - DO NOT launch more than `step_1_concurrent_max` `task()` calls in
   a single response. Exceeding this risks hitting the MiniMax Token
   Plan Max-tier concurrent-agent cap (4-5 sustained).
-- If a batch's responses take > `step_1_agent_timeout_seconds` (600s
-  default), ABORT that specific subagent — log
+- If a batch's responses take > `step_1_agent_timeout_seconds` (0s
+  default = unlimited), ABORT that specific subagent — log
   "`{agent}` did not converge in {timeout}s; excluded from this run"
   — and continue with whatever proposals did complete.
 - Do NOT let one slow subagent block the whole pipeline. If

@@ -2,7 +2,49 @@
 
 All notable changes to `opencode-moa` are documented here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.4] - 2026-07-18
+
+### Changed
+
+- **Default `step_5_modo`: `skip` → `sintesis_central`.** The integrator
+  candidate is back on by default. Rationale: end-to-end runs since v1.2.1
+  (Run D fib-rust-cli, Run E moodle-quiz-extractor, Run F voxora-kernels)
+  show `sintesis_central` wins on quality in some cohorts and loses in
+  others — net effect is positive because the integrator consolidates
+  the field, and even in cohorts where it loses the gap is small. The
+  v1.2.1 hang with `sintesis_central` was attributed to LLM batching
+  across steps rather than to the integrator itself; with
+  `step_1_concurrent_max: 1` (strict serial, see below) the cross-step
+  batching that triggered the hang cannot recur. Users who want the
+  v1.2.1 behaviour can opt out with `"step_5_modo": "skip"` or
+  `"step_5_modo": "self_improve"` in their project-level
+  `orquestador.json` (or via `--step-5-modo=...` on the command line).
+- **Default `step_1_concurrent_max`: `3` → `1` (strict serial).** Step 1
+  now launches one propuesta subagent per orchestrator response,
+  eliminating cross-batch LLM batching. Peak concurrent MiniMax agents
+  in step 1 = 1, +1 evaluador at step 3 transition = 2 — well under the
+  Max-tier ceiling of 4-5 sustained. Wall-clock cost for step 1 grows
+  ~3× over `step_1_concurrent_max: 3`, but quota pressure drops
+  proportionally and the cross-step batching that triggered the v1.2.1
+  hang is now structurally impossible.
+- **Default `step_1_agent_timeout_seconds`: `600` → `0` (unlimited).**
+  Per-proposal hard cap removed. Subagents are bounded only by
+  `max_wall_clock_minutes` (still 0 by default = unlimited). Rationale:
+  with strict serial, a stuck proposal blocks the entire run; the 600s
+  cap was too tight for the largest cohorts in practice (Run F agents
+  routinely took 8-9 min). Users who want a hard cap can set a positive
+  value in their project-level `orquestador.json`.
+
+### Notes
+
+- The `$schema` URL
+  (`https://opencode-moa.dev/schemas/orquestador.v1.3.json`) is unchanged.
+  The schema validates field structure; only the default values changed
+  in v1.4. Existing v1.3 configs are forward-compatible: all fields,
+  types, and semantics are identical, so a v1.3 `orquestador.json` works
+  unchanged against the v1.4 default bundle.
+- `opencode-moa/AGENTS.md §10.2` updated to reflect the v1.3.x → v1.4
+  default revert and the per-field "v1.4 changed from" annotations.
 
 ### Housekeeping
 

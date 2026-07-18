@@ -2,7 +2,7 @@
 
 This folder contains ONLY the files you need to install in your OpenCode configuration. Everything else in this repository (documentation, proposals, examples) stays in the repo for reference.
 
-**Current bundle: v1.3 (2026-07-16) — 42 agents (6 OpenCode Go + 36 MiniMax Token Plan), 4 meta-agents + 2 commands.**
+**Current bundle: v1.4 (2026-07-18) — 42 agents (6 OpenCode Go + 36 MiniMax Token Plan), 4 meta-agents + 2 commands. Default flip of `step_5_modo` (back to `sintesis_central`), `step_1_concurrent_max` (3 → 1), `step_1_agent_timeout_seconds` (600 → 0).**
 
 ## What to copy
 
@@ -33,7 +33,7 @@ ls ~/.config/opencode/commands/
 # Should show: orquestar.md
 
 cat ~/.config/opencode/orquestador.json | jq '.agentes_a_competir | length'
-# Should show: 42 entries (the v1.3 default roster)
+# Should show: 42 entries (the v1.3/v1.4 default roster — unchanged in v1.4)
 ```
 
 ### Linux / macOS (remote VPS via SSH)
