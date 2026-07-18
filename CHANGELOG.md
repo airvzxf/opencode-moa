@@ -2,6 +2,48 @@
 
 All notable changes to `opencode-moa` are documented here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5] - 2026-07-18
+
+### Removed (BREAKING)
+
+- **`step_1_concurrent_max` parameter removed from `orquestador.json` schema.**
+  The concurrency cap that controlled batch size in steps 1, 2, and 6 is
+  gone. Steps 1, 2, and 6 now run in **strict serial**: one agent per
+  orchestrator response, no parallelism within those steps, no batching
+  loop.
+
+  **Rationale:** The default has been `1` (strict serial) since v1.4
+  (2026-07-18), after the v1.2.1 cross-step batching hang was attributed
+  to LLM batching rather than to the integrator. Removing the parameter
+  makes the strict-serial behavior structurally enforced rather than
+  configurable. Peak concurrent MiniMax agents in step 1 is now
+  permanently 1 (+ 1 evaluador at step 3 transition = 2), well under the
+  Max-tier ceiling of 4-5 sustained. Wall-clock cost is identical to
+  v1.4 with the default `step_1_concurrent_max: 1`.
+
+  **Migration:** Remove `step_1_concurrent_max` from any project-level
+  `orquestador.json`. The field is silently ignored if present (no parse
+  error). All other fields are unchanged.
+
+  **Internal simplification:** the batch loop machinery (`BATCH_SIZE`,
+  `NUM_BATCHES`, `REQUIRED_TASK_CALLS`, `chunk(...)`) was removed from
+  the orquestador prompt. Steps 1, 2, and 6 now use a simple
+  `for each agent in ROSTER: task()` loop.
+
+### Notes
+
+- The `$schema` URL is unchanged. Existing v1.4 configs that still
+  contain `step_1_concurrent_max` continue to parse; the field is
+  ignored.
+- `opencode-moa/AGENTS.md` section 10 has been simplified — the
+  "Concurrency cap (`step_1_concurrent_max`)" subsection is removed;
+  the "STRICT SERIALIZATION RULE" subsection is preserved and updated
+  to reflect the v1.5 structural enforcement.
+- The orquestador's step 1 prompt has been rewritten from the
+  "batched, capped concurrency" model to the "strict serial" model.
+  The anti-truncation contract still applies (the `task()`-only
+  response shape) but is now per-agent rather than per-batch.
+
 ## [1.4] - 2026-07-18
 
 ### Changed

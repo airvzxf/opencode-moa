@@ -1,6 +1,6 @@
 {
   "$schema": "https://opencode-moa.dev/schemas/orquestador.v1.3.json",
-  "version": "1.4",
+  "version": "1.5",
 
   "agentes_a_competir": [
     "propuesta-kimi",
@@ -57,7 +57,6 @@
   "validacion_empirica": false,
   "descalificar_fallida": false,
 
-  "step_1_concurrent_max": 1,
   "step_1_agent_timeout_seconds": 0,
 
   "step_5_modo": "sintesis_central",
