@@ -4,6 +4,13 @@ All notable changes to `opencode-moa` are documented here. The format is based o
 
 ## [Unreleased]
 
+### Housekeeping
+
+- Removed `opencode-moa/agents/orquestador.md.pre-fix3.bak` (25 KB / 615
+  lines). The pre-fix3 backup of `orquestador.md` (now 863 lines) was a
+  v0.3 snapshot no longer referenced by any code, config, or bitácora;
+  its history is preserved in git (`48c57d5`, PR #7).
+
 ### Run F — 2026-07-16 voxora-kernels v1.3 (22-agent CUDA kernel compatibility cohort)
 
 - **ID:** `voxora-kernels` — first CUDA-kernel / GPU-binary compatibility
