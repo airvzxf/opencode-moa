@@ -1,6 +1,6 @@
 # opencode-moa
 
-> A native OpenCode multi-agent orchestrator for competitive model evaluation, empirical validation, and iterative refinement — **without a single line of bash**.
+> A native OpenCode multi-agent orchestrator for competitive model evaluation and empirical validation — **without a single line of bash**.
 
 [![OpenCode](https://img.shields.io/badge/OpenCode-native-blueviolet)](https://opencode.ai)
 [![Mixture-of-Agents](https://img.shields.io/badge/inspired%20by-Mixture%20of%20Agents-orange)](https://arxiv.org/abs/2406.04692)
@@ -16,7 +16,6 @@
 3. **Evaluate** them with objective criteria
 4. **Classify** and rank them
 5. **Improve** them using feedback
-6. **Iterate** until convergence
 
 All coordination is done by an OpenCode primary agent (`orquestador`) that invokes subagents via OpenCode's native `task` tool. Everything is declarative markdown + JSON.
 
@@ -60,12 +59,6 @@ From the OpenCode TUI:
 /orquestar "Design a REST API for inventory management with JWT auth" auth-jwt
 ```
 
-Or with iterate mode:
-
-```
-/orquestar-iterate "Design a REST API for inventory management with JWT auth" auth-jwt
-```
-
 Or with the smoke test (validates the pipeline with a trivial prompt):
 
 ```
@@ -74,11 +67,11 @@ Or with the smoke test (validates the pipeline with a trivial prompt):
 
 ### 3. Inspect results
 
-Each iteration produces THREE sibling directories — one for reports
+Each run produces THREE sibling directories — one for reports
 (`.md`), one for empirical scratch space, one for bash logs:
 
 ```
-out/auth-jwt/iter-1/                   ← reports (.md)
+out/auth-jwt/                          ← reports (.md)
 ├── 01-propuesta-{agente}.md            ← one per configured proposal agent
 ├── 02-validacion-{agente}.md           ← when empirical validation is enabled
 ├── 03-calificacion-evaluador.md
@@ -86,16 +79,15 @@ out/auth-jwt/iter-1/                   ← reports (.md)
 ├── 05-propuesta-integrada.md            ← `sintesis_central` mode
 ├── 07-calificacion-final.md
 ├── 08-ganador.md
-├── 09-sumario.md
-└── 10-sintesis-cross-iter.md            ← when `sintesis_final` is enabled
+└── 09-sumario.md
 
-work/auth-jwt/iter-1/                   ← empirical artifacts (per subagent)
+work/auth-jwt/                          ← empirical artifacts (per subagent)
 ├── 01-propuesta-{agente}/              ← scaffolds, dependencies, binaries
 ├── 02-validacion-{agente}/             ← per-section viability scratch
 ├── 03-calificacion-evaluador/          ← usually empty (pure reasoning)
 └── ...
 
-logs/auth-jwt/iter-1/                   ← bash session log per subagent
+logs/auth-jwt/                          ← bash session log per subagent
 ├── 01-propuesta-{agente}.log
 ├── 02-validacion-{agente}.log
 └── ...
@@ -124,7 +116,7 @@ opencode-moa/
 │   └── installation.md                    ← detailed installation guide
 ├── examples/
 │   ├── smoke-test-colores.md              ← minimal smoke test example
-│   └── auth-jwt-rest-api.md               ← full example with iterate mode
+│   └── auth-jwt-rest-api.md               ← full example
 └── opencode-moa/                          ← INSTALLABLE BUNDLE (copy this to ~/.config/opencode/)
     ├── README.md                          ← installation instructions for this bundle
     ├── agents/
@@ -139,8 +131,7 @@ opencode-moa/
     │   └── validador.md                   ← empirical validation (bash + webfetch)
     ├── commands/
     │   ├── orquestar.md                   ← /orquestar command
-    │   └── orquestar-iterate.md           ← /orquestar-iterate command
-    └── orquestador.json                   ← configuration (list of models, iterate settings)
+    │   └── orquestador.json                   ← configuration (list of models)
 ```
 
 ## Key features
@@ -164,13 +155,6 @@ A single evaluator (`evaluador`, using MiniMax-M3 with temperature 0.0) grades a
 ### Opt-in disqualification (step 4, 8)
 
 By default, proposals with low viability stay in the ranking as ⚠️ warnings (with AP reduced). Set `descalificar_fallida: true` in `orquestador.json` to enable strict disqualification.
-
-### Iterative convergence (step 9 → step 0 loop)
-
-`/orquestar-iterate` repeats the configured flow until:
-- The score improvement between iterations falls below `umbral_convergencia` (default 0.5)
-- The number of iterations reaches `max_iteraciones` (default 5 in the v1.3 bundle)
-- A negative improvement is detected; the orchestrator stops on regression
 
 ### 4-layer smoke test control
 
@@ -211,23 +195,19 @@ The merge is automatic and non-conflicting keys are preserved.
 
 ## Configuration
 
-The `orquestador.json` file has 18 configurable fields plus `$schema`:
+The `orquestador.json` file has 14 configurable fields plus `$schema`:
 
 | Field | Type | Default | Description |
 |---|---|---|---|
 | `version` | string | required | Schema version |
 | `agentes_a_competir` | array<string> | required | Agent IDs that generate proposals |
 | `modelo_objetivo` | string | required | Target model for meta-agents |
-| `max_iteraciones` | integer (1-10) | 5 | Max iterations in iterate mode |
-| `umbral_convergencia` | number | 0.5 | Minimum score improvement to continue |
 | `validacion_empirica` | boolean | false | Enable validation steps 2 and 6 |
 | `descalificar_fallida` | boolean | false | Enable strict disqualification |
 | `smoke_test` | boolean | false | Smoke-test mode |
 | `step_1_concurrent_max` | integer | 3 | Proposal batch size |
 | `step_1_agent_timeout_seconds` | integer | 600 | Per-agent timeout; 0 means unlimited |
 | `step_5_modo` | string | `skip` | `sintesis_central`, `self_improve`, or `skip` |
-| `sintesis_final` | boolean | false | Write cross-iteration synthesis |
-| `sintesis_final_modelo` | string | target model | Model for final synthesis |
 | `multi_eval` | boolean | false | Enable multi-model evaluation |
 | `multi_eval_modelos` | array<string> | `[]` | Evaluator models when enabled |
 | `max_wall_clock_minutes` | integer | 0 | Global wall-clock cap; 0 means unlimited |

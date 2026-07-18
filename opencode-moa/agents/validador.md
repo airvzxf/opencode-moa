@@ -63,30 +63,29 @@ When you execute proposal commands (install dependencies, build a
 scratch project, run a sample endpoint), any artifact you generate
 belongs in your private work directory:
 
-  $WORKSPACE/work/{id}/iter-{N}/02-validacion-{agente}/   (step 2)
-  $WORKSPACE/work/{id}/iter-{N}/06-validacion-{candidato}/ (step 6)
+  $WORKSPACE/work/{id}/02-validacion-{agente}/   (step 2)
+  $WORKSPACE/work/{id}/06-validacion-{candidato}/ (step 6)
 
 The orchestrator creates this directory before invoking you and
 passes you the absolute path in your prompt. Use it exclusively for
 empirical artifacts. Do NOT use `/tmp`, the workspace root, or any
-path under `$WORKSPACE/out/{id}/iter-{N}/` for these artifacts.
+path under `$WORKSPACE/out/{id}/` for these artifacts.
 
 For step 6 (candidate validation), the work dir name uses the
 candidate name (`05-propuesta-integrada` for the integrated
 proposal, `05-mejorada-{agente}` for self-improved candidates) — not
-the original propuesta agent. This keeps iter-N history
-unambiguous.
+the original propuesta agent.
 
 Your bash session log is captured at:
 
-  $WORKSPACE/logs/{id}/iter-{N}/02-validacion-{agente}.log   (step 2)
-  $WORKSPACE/logs/{id}/iter-{N}/06-validacion-{candidato}.log (step 6)
+  $WORKSPACE/logs/{id}/02-validacion-{agente}.log   (step 2)
+  $WORKSPACE/logs/{id}/06-validacion-{candidato}.log (step 6)
 
 # Inputs
 
 You receive a prompt with:
-- Path to the proposal to validate: `out/{id}/iter-{N}/01-propuesta-{modelo_id}.md` (or `05-mejorada-{modelo_id}.md` in step 6)
-- Your output file: `out/{id}/iter-{N}/02-validacion-{modelo_id}.md` (or `06-validacion-mejorada-{modelo_id}.md`)
+- Path to the proposal to validate: `out/{id}/01-propuesta-{modelo_id}.md` (or `05-mejorada-{modelo_id}.md` in step 6)
+- Your output file: `out/{id}/02-validacion-{modelo_id}.md` (or `06-validacion-mejorada-{modelo_id}.md`)
 
 # Process (per-section viability)
 
@@ -112,7 +111,7 @@ You receive a prompt with:
 # Output format (per-section)
 
 ```markdown
-# 02 — Empirical Validation {id} iter-{N} {modelo_id}
+# 02 — Empirical Validation {id} {modelo_id}
 
 **Date:** {ISO 8601}
 **Proposal validated:** {proposal_path}
