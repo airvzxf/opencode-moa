@@ -175,8 +175,8 @@ for self-improved candidates in step 6).
 
 4. **Schema v1.2: agent-first roster resolution.** For each entry in
    `agentes_a_competir`:
-   - The entry IS the agent name (e.g. `propuesta-minimax-T15`,
-     `propuesta-minimax-baseline-01`, `propuesta-glm`). No `id_corto`
+   - The entry IS the agent name (e.g. `propuesta-minimax-T15P10-01`,
+     `propuesta-minimax-T05P05-03`, `propuesta-glm`). No `id_corto`
      derivation is performed — the entry maps 1:1 to a subagent filename.
    - Verify `~/.config/opencode/agents/{agente}.md` exists OR
      `.opencode/agents/{agente}.md` exists (project-level override).
@@ -255,7 +255,7 @@ for self-improved candidates in step 6).
 
 ## Default configuration
 
-When merging, the hardcoded v1.6 defaults before any JSON override are:
+When merging, the hardcoded v1.7 defaults before any JSON override are:
 
 ```json
 {
@@ -266,23 +266,6 @@ When merging, the hardcoded v1.6 defaults before any JSON override are:
     "propuesta-glm",
     "propuesta-mimo",
     "propuesta-qwen37-plus",
-
-    "propuesta-minimax",
-    "propuesta-minimax-baseline-01",
-    "propuesta-minimax-baseline-02",
-    "propuesta-minimax-baseline-03",
-    "propuesta-minimax-baseline-04",
-    "propuesta-minimax-baseline-05",
-    "propuesta-minimax-baseline-06",
-    "propuesta-minimax-baseline-07",
-    "propuesta-minimax-baseline-08",
-    "propuesta-minimax-baseline-09",
-    "propuesta-minimax-baseline-10",
-    "propuesta-minimax-baseline-11",
-    "propuesta-minimax-baseline-12",
-    "propuesta-minimax-baseline-13",
-    "propuesta-minimax-baseline-14",
-    "propuesta-minimax-baseline-15",
 
     "propuesta-minimax-creative",
     "propuesta-minimax-security-first",
@@ -298,15 +281,51 @@ When merging, the hardcoded v1.6 defaults before any JSON override are:
     "propuesta-minimax-ci-github",
     "propuesta-minimax-cd-releases",
 
-    "propuesta-minimax-T05",
-    "propuesta-minimax-T07",
-    "propuesta-minimax-T10",
-    "propuesta-minimax-T15",
-
-    "propuesta-minimax-P099",
-
-    "propuesta-minimax-T05K50",
-    "propuesta-minimax-T10K200"
+    "propuesta-minimax-T00P00-01",
+    "propuesta-minimax-T00P00-02",
+    "propuesta-minimax-T00P00-03",
+    "propuesta-minimax-T05P00-01",
+    "propuesta-minimax-T05P00-02",
+    "propuesta-minimax-T05P00-03",
+    "propuesta-minimax-T10P00-01",
+    "propuesta-minimax-T10P00-02",
+    "propuesta-minimax-T10P00-03",
+    "propuesta-minimax-T15P00-01",
+    "propuesta-minimax-T15P00-02",
+    "propuesta-minimax-T15P00-03",
+    "propuesta-minimax-T20P00-01",
+    "propuesta-minimax-T20P00-02",
+    "propuesta-minimax-T20P00-03",
+    "propuesta-minimax-T00P05-01",
+    "propuesta-minimax-T00P05-02",
+    "propuesta-minimax-T00P05-03",
+    "propuesta-minimax-T05P05-01",
+    "propuesta-minimax-T05P05-02",
+    "propuesta-minimax-T05P05-03",
+    "propuesta-minimax-T10P05-01",
+    "propuesta-minimax-T10P05-02",
+    "propuesta-minimax-T10P05-03",
+    "propuesta-minimax-T15P05-01",
+    "propuesta-minimax-T15P05-02",
+    "propuesta-minimax-T15P05-03",
+    "propuesta-minimax-T20P05-01",
+    "propuesta-minimax-T20P05-02",
+    "propuesta-minimax-T20P05-03",
+    "propuesta-minimax-T00P10-01",
+    "propuesta-minimax-T00P10-02",
+    "propuesta-minimax-T00P10-03",
+    "propuesta-minimax-T05P10-01",
+    "propuesta-minimax-T05P10-02",
+    "propuesta-minimax-T05P10-03",
+    "propuesta-minimax-T10P10-01",
+    "propuesta-minimax-T10P10-02",
+    "propuesta-minimax-T10P10-03",
+    "propuesta-minimax-T15P10-01",
+    "propuesta-minimax-T15P10-02",
+    "propuesta-minimax-T15P10-03",
+    "propuesta-minimax-T20P10-01",
+    "propuesta-minimax-T20P10-02",
+    "propuesta-minimax-T20P10-03"
   ],
   "modelo_objetivo": "minimax-coding-plan/MiniMax-M3",
   "validacion_empirica": false,
@@ -449,7 +468,8 @@ task(
 
       === PARAMETER REPORTING (REQUIRED for parameter-sweep agents) ===
       If your agent name matches propuesta-minimax-T*, -P*, -K*, or
-      any combination thereof, append at the end of your proposal file:
+      any T*P* combination thereof (e.g. -T15P10-01), append at the end
+      of your proposal file:
 
       ## Generation parameters
 
@@ -707,12 +727,12 @@ task(
     `01-{agent}.md` file for a `## Generation parameters`
     section. Build a table showing:
 
-    | Agent | Declared temp | Observed temp | Status | Total score |
-    |-------|---------------|---------------|--------|-------------|
-    | propuesta-minimax-baseline-01 | 0.7 | 0.7 (assumed) | ✅ | XX/50 |
-    | propuesta-minimax-T00 | 0.0 | 0.0 (assumed) | ✅ | XX/50 |
-    | propuesta-minimax-T15 | 1.5 | 1.5 (assumed) or 1.0 (clamped) | ⚠️ | XX/50 |
-    | propuesta-minimax-K200 | - | - | ❓ top_k unverified | XX/50 |
+    | Agent | Declared T/P | Observed T/P | Status | Total score |
+    |-------|--------------|--------------|--------|-------------|
+    | propuesta-minimax-T00P00-01 | 0.0 / 0.0 | 0.0 / 0.0 (assumed) | ✅ | XX/50 |
+    | propuesta-minimax-T05P05-03 | 0.5 / 0.5 | 0.5 / 0.5 (assumed) | ✅ | XX/50 |
+    | propuesta-minimax-T15P10-02 | 1.5 / 1.0 | 1.5 (assumed) or 1.0 (clamped) / 1.0 | ⚠️ | XX/50 |
+    | propuesta-minimax-T20P10-01 | 2.0 / 1.0 | - / - | ❓ out-of-spec | XX/50 |
     | ... |
 
     If the proposal lacks the `## Generation parameters` section, mark
