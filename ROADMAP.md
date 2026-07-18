@@ -73,15 +73,16 @@ agentes removed.
   which is fine, but a degenerate loop could fill the disk).
 - [ ] **NEW: Investigate step-1 tool-call truncation (Run D §5.8.7).**
   When the step-1 prompt text exceeds a length threshold, the
-  orquestador's response carrying multiple `task()` siblings in one
-  response is truncated mid-emission (Run D observed with baseline-02
-  and baseline-03 in the second batch of 3). Open questions: (a)
-  what is the maximum prompt length before truncation? (b) Should
-  `step_1_concurrent_max` be lowered to 2 for cohorts with long
-  prompt templates? (c) Should the workdir/path block be DRY'd out of
-  the step-1 prompt and into the agent's own prompt template? (d) Is
-  this an opencode SDK 1.17.18 streaming-response bug or an LLM-side
-  truncation? See `DRAFT-multi-model-orchestration.md` §7.5a.
+  orquestador's response carrying the `task()` call is truncated
+  mid-emission (Run D observed with baseline-02 and baseline-03 in
+  the second batch of 3). Note: as of v1.5 each step 1 response
+  contains exactly one `task()` call (strict serial, batching
+  removed), so the original "second batch of 3" framing is
+  historical. Open questions: (a) what is the maximum prompt length
+  before truncation? (b) Should the workdir/path block be DRY'd out
+  of the step-1 prompt and into the agent's own prompt template?
+  (c) Is this an opencode SDK 1.17.18 streaming-response bug or an
+  LLM-side truncation? See `DRAFT-multi-model-orchestration.md` §7.5a.
 - [ ] **NEW: Direct side-by-side §6.2 validation (Run D §7.5).**
   Repeat fib-rust-cli with `step_5_modo: self_improve` on the same
   6-baseline cohort. Goal: gold-standard §6.2 validation comparing

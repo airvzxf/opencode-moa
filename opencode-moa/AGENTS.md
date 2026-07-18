@@ -57,9 +57,9 @@ restore of `propuesta-minimax-maintainable` (v1.3.1 addendum).
 - **Total:** ~$2.24 vs $4.60 (–$2.36, –51%)
 - Cache hit rate: ~91% of input tokens served from cache (the dominant cost-optimization factor)
 
-### Wall-clock estimate (per run, at step_1_concurrent_max=1)
+### Wall-clock estimate (per run, strict serial)
 
-- Step 1: 42 agentes / 1 concurrent = 42 batches × ~3 min = ~126 min (serialised; well under Max-tier ceiling)
+- Step 1: 42 agentes / 1 per response = 42 responses × ~3 min = ~126 min (serialised; well under Max-tier ceiling)
 - Steps 3-9: ~30 min (unchanged)
 - **Total:** ~156 min (unchanged; batches run faster since no shared-quota contention, but there are 3× more of them). `max_wall_clock_minutes: 0` leaves the run unlimited by default.
 
@@ -416,34 +416,33 @@ the user can compare their outputs on identical prompts.
 
 ## 10. v1.2 — concurrency cap and parameter validation
 
-### Concurrency cap (`step_1_concurrent_max`)
+### Concurrency cap (REMOVED in v1.5)
 
-The MiniMax Token Plan Max tier supports **4-5 concurrent agents
-sustained**. Bursting more risks hitting the 5-hour rolling quota
-or getting throttled by the gateway. The user's plan is on Max tier
-($50/month, 5.1B tokens/month, 4-5 concurrent).
+**Historical context only.** The v1.2-v1.4 `step_1_concurrent_max`
+parameter controlled the batch size of step 1 (and step 2 / step 6)
+proposal fan-outs. The MiniMax Token Plan Max tier supports 4-5
+concurrent agents sustained, so bursting more risked hitting the
+5-hour rolling quota or getting throttled by the gateway. The
+parameter's default was 1 (strict serial) since v1.4.
 
-v1.2 introduces `step_1_concurrent_max` (default 1 = strict serial; v1.4
-changed from default 3). The orchestrator
-uses the merged configuration value as the batch size. Every step 1
-response must contain exactly
-`min(step_1_concurrent_max, remaining_agents)` sibling `task()` calls;
-those siblings run in parallel, and the next batch waits for the whole
-current batch to return:
-
-- 42 agents / 1 per batch = 42 batches
-- Each response launches exactly 1 sibling
-- Each batch waits for completion before the next launches
-- Peak concurrent MiniMax agents: 1 in step 1, +1 evaluador at step
-  3 transition = 2 (well within Max tier ceiling of 4-5)
-- Step 1 wall time: ~126 min estimated (vs ~6 min unbounded at batch=42)
+In v1.5 the parameter was **removed entirely** from
+`orquestador.json` and the orquestador prompt. Strict serialization is
+now structurally enforced by the orchestrator prompt itself — there is
+no batching loop, no `chunk()` call, no `BATCH_SIZE` variable. Each
+propuesta (and each validador in steps 2 and 6) gets its own
+orchestrator response containing exactly one `task()` call. Peak
+concurrent MiniMax agents in step 1 is permanently 1 (+ 1 evaluador at
+step 3 transition = 2, well within the Max-tier ceiling of 4-5). Step
+1 wall time is unchanged from the v1.4 default-1 behavior (~126 min for
+the 42-agent roster). Existing v1.4 configs that still carry the field
+parse silently — the field is ignored.
 
 `step_1_agent_timeout_seconds` (default 0 = unlimited; v1.4 changed
 from default 600) bounds each propuesta subagent. If a subagent
-exceeds the timeout, it is ABORTED and the batch continues with
-whatever proposals did complete.
+exceeds the timeout, it is ABORTED and the run continues with whatever
+proposals did complete.
 
-### v1.2.1 STRICT SERIALIZATION RULE
+### v1.2.1 STRICT SERIALIZATION RULE (structural since v1.5)
 
 After running the v1.2 experiment, the user pointed out that if
 `step_5_modo: sintesis_central` runs concurrently with step 1's last
@@ -451,14 +450,14 @@ batch (via LLM batching across steps), peak concurrent MiniMax agents
 could exceed the Max-tier ceiling. The fix:
 
 - Steps are **STRICTLY SEQUENTIAL relative to other numbered steps**.
-  This rule must never serialize sibling agents inside one step 1 batch;
-  those sibling `task()` calls remain parallel in the same response.
-  Step 1 must complete entirely (all batches done, all files written or
-  timed out) before step 3 launches. Step 3 must complete before step 4.
-  Etc.
+  Since v1.5 this is structurally enforced — there are no longer any
+  "sibling agents inside one step 1 batch" because step 1 emits exactly
+  one `task()` call per orchestrator response. Step 1 must complete
+  entirely (all responses done, all files written or timed out) before
+  step 3 launches. Step 3 must complete before step 4. Etc.
 - **DO NOT combine step 1 task() calls with step 3+ task() calls
   in the same response.** If the LLM is tempted, split into two
-  responses: response 1 = all step 1 batch task() calls; response 2
+  responses: response 1 = the step 1 task() call; response 2
   (after response 1 returns) = step 3+ task() call.
 - `step_5_modo: sintesis_central` default was changed to `skip`
   (see v1.2.1 §1 patch notes) because the integrated synthesis call
@@ -469,9 +468,9 @@ could exceed the Max-tier ceiling. The fix:
   moodle-quiz-extractor, Run F voxora-kernels) shows `sintesis_central`
   wins on quality in some cohorts and loses in others. Net effect is
   positive — the integrator consolidates the field — so the default is
-  flipped back to `sintesis_central`. With `step_1_concurrent_max: 1`
-  (also v1.4), the cross-step batching that triggered the v1.2.1 hang
-  is now structurally impossible.
+  flipped back to `sintesis_central`. With strict serialization now
+  structurally permanent in v1.5, the cross-step batching that
+  triggered the v1.2.1 hang cannot recur.
 
 ### Parameter validation report (`param_validation_report`)
 
@@ -676,4 +675,4 @@ historical evidence of the pre-convention behavior.
 
 ---
 
-*Last updated:* 2026-07-18 (v1.4 — default flip of `step_5_modo` back to `sintesis_central`, `step_1_concurrent_max` to 1, `step_1_agent_timeout_seconds` to 0).
+*Last updated:* 2026-07-18 (v1.5 — removed `step_1_concurrent_max` entirely; strict serial is now structurally enforced; supersedes v1.4 default flip of `step_5_modo` back to `sintesis_central`, `step_1_agent_timeout_seconds` to 0).

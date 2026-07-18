@@ -131,10 +131,10 @@ opencode-moa/
 
 ### Multi-model competition (step 1)
 
-The v1.4 bundle includes the same 42-agent default roster as v1.3: 6 OpenCode Go agents
-and 36 MiniMax Token Plan agents (no agent added or removed in v1.4). A project-level `orquestador.json` may
+The v1.5 bundle inherits the 42-agent default roster from v1.3/v1.4: 6 OpenCode Go agents
+and 36 MiniMax Token Plan agents (no agent added or removed). A project-level `orquestador.json` may
 select a smaller cohort or add custom variants. Proposals are launched in
-batches controlled by `step_1_concurrent_max` (default 1 = strict serial since v1.4), and each selected agent
+strict serial order — one agent per orchestrator response — and each selected agent
 writes its own report.
 
 ### Empirical validation (step 2)
@@ -177,7 +177,7 @@ The merge is automatic and non-conflicting keys are preserved.
 
 ## Configuration
 
-The `orquestador.json` file has 13 configurable fields plus `$schema`:
+The `orquestador.json` file has 12 configurable fields plus `$schema`:
 
 | Field | Type | Default | Description |
 |---|---|---|---|
@@ -186,7 +186,6 @@ The `orquestador.json` file has 13 configurable fields plus `$schema`:
 | `modelo_objetivo` | string | required | Target model for meta-agents |
 | `validacion_empirica` | boolean | false | Enable validation steps 2 and 6 |
 | `descalificar_fallida` | boolean | false | Enable strict disqualification |
-| `step_1_concurrent_max` | integer | 1 | Proposal batch size |
 | `step_1_agent_timeout_seconds` | integer | 0 | Per-agent timeout; 0 means unlimited |
 | `step_5_modo` | string | `sintesis_central` | `sintesis_central`, `self_improve`, or `skip` |
 | `multi_eval` | boolean | false | Enable multi-model evaluation |

@@ -80,14 +80,12 @@ pure reasoning and only produce one .md).
       - modelo_objetivo (string) — required
       - validacion_empirica (bool) — default FALSE (changed from TRUE in v1.1; see opencode bug #35073)
       - descalificar_fallida (bool) — default false
-      - step_1_concurrent_max (int) [NEW v1.2] — default 1 (strict serial; v1.4 changed from 3)
       - step_1_agent_timeout_seconds (int) [NEW v1.2] — default 0 (unlimited; v1.4 changed from 600)
       - step_5_modo (string) [NEW v1.1] — "sintesis_central" | "self_improve" | "skip"
                                     default "sintesis_central" (v1.4 reverted from "skip";
                                     the v1.2.1 hang was attributed to cross-step LLM
-                                    batching, not the integrator — and with
-                                    step_1_concurrent_max: 1 that batching is now
-                                    structurally impossible)
+                                    batching, not the integrator; strict serialization
+                                    became structurally permanent in v1.5)
       - multi_eval (bool) [NEW v1.1] — default false (single-eval remains default)
       - multi_eval_modelos (array<string>) [NEW v1.1] — empty by default
       - max_wall_clock_minutes (int) [NEW v1.1] — default 0 (unlimited; positive values opt into a global time limit)
@@ -226,7 +224,6 @@ When merging, the hardcoded v1.2 defaults before any JSON override are:
   "modelo_objetivo": "minimax-coding-plan/MiniMax-M3",
   "validacion_empirica": false,
   "descalificar_fallida": false,
-  "step_1_concurrent_max": 1,
   "step_1_agent_timeout_seconds": 0,
   "step_5_modo": "sintesis_central",
   "multi_eval": false,
@@ -242,66 +239,61 @@ When merging, the hardcoded v1.2 defaults before any JSON override are:
 - `validacion_empirica` default flipped from `true` to `false` (the
   validador subagent hangs on permission asks with >12 parallel agents;
   see `AGENTS.md` §3 and opencode upstream bug #35073).
-- New fields: `step_1_concurrent_max`, `step_1_agent_timeout_seconds`,
-  `param_validation_report`.
+- New fields: `step_1_agent_timeout_seconds`, `param_validation_report`.
 
-## Step 1 — Proposal generation (batched, capped concurrency)
+## Step 1 — Proposal generation (strict serial)
 
-**PARALLELISM IS THE DEFAULT. Step 1 is a parallel fan-out, not a sequence.**
+**STRICT SERIAL IS STRUCTURAL (v1.5+).** Step 1 runs one propuesta
+subagent per orchestrator response, no batching, no parallelism within
+step 1. The `step_1_concurrent_max` parameter that previously controlled
+the batch size was **removed in v1.5** (see CHANGELOG). The default had
+been `1` since v1.4; the parameter was redundant and is gone.
 
-The simplest mental model: imagine the entire roster as a single
-assistant response that contains N sibling `task()` calls, where N
-equals `len(agentes_a_competir)`. That mental model is correct up to
-the concurrency cap. With `step_1_concurrent_max: 1`, each batch
-contains a single sibling `task()` call and emits N separate
-responses. Each call runs **in isolation** — it starts, finishes, and
-the next response picks up the next agent. NEVER issue more than
-`step_1_concurrent_max` siblings in one response. NEVER add text, logs, or
-markdown between siblings in the same batch.
+The simplest mental model: each propuesta agent in the roster gets its
+own orchestrator response containing exactly one `task()` call. With
+42 agents in the roster, step 1 spans 42 responses. Each call runs **in
+isolation** — it starts, finishes, and the next response picks up the
+next agent. NEVER put two `task()` calls for propuesta subagents in the
+same response.
 
 **ANTI-TRUNCATION CONTRACT (2026-07-13):** the response that contains
-the `task()` calls must be 100% tool calls — zero prose, zero roster
+the `task()` call must be 100% tool call — zero prose, zero roster
 enumeration, zero summary, zero planning, zero log lines (not even
-`STEP 1 Batch k/N: launching ...`). All planning AND all status
-log lines MUST happen in a PRIOR response (the one immediately
-before this one). If you cannot fit `REQUIRED_TASK_CALLS` `task()`
-calls in this response, the orchestrator runtime will truncate your
-output and the missing siblings will not be emitted — this is
-exactly the bug that hit batch 0 on 2026-07-13. To prevent it:
-plan in the previous response, then in this response emit ONLY the
-`task()` calls and stop. The first character of the response must be
-`task(` (or an empty optional thinking block, then `task(`). The
-last character must be the closing `)` of the last sibling. Nothing
-else.
+`STEP 1 launching ...`). All planning AND all status log lines MUST
+happen in a PRIOR response (the one immediately before this one). If
+the orchestrator runtime truncates your output the call will not be
+emitted — this is exactly the bug that hit batch 0 on 2026-07-13. To
+prevent it: plan in the previous response, then in this response emit
+ONLY the `task()` call and stop. The first character of the response
+must be `task(` (or an empty optional thinking block, then `task(`).
+The last character must be the closing `)` of the call. Nothing else.
 
-**Concrete shape of the batch-k response:**
+**Concrete shape of the agent-k response:**
 
 ```
-task( subagent_type="{AGENTS[0]}", description="...", prompt="..." )
-task( subagent_type="{AGENTS[1]}", description="...", prompt="..." )
-task( subagent_type="{AGENTS[2]}", description="...", prompt="..." )
+task( subagent_type="{AGENT}", description="...", prompt="..." )
 ```
 
-**Concrete shape of the response BEFORE batch k (status + planning):**
+**Concrete shape of the response BEFORE agent k (status + planning):**
 
 ```
-[STEP 1] Batch k/N: launching exactly {REQUIRED_TASK_CALLS} sibling agents (out of {TOTAL} total).
-Resolving {REQUIRED_TASK_CALLS} models from agente_modelos: ...
+[STEP 1] Agent k/N: launching {AGENT} (out of {TOTAL} total).
+Resolving model from agente_modelos: ...
 {todo list of remaining agents}
 ```
 
 Both blocks must be separate responses. Status belongs to the
-previous response. Tool calls belong to this response.
+previous response. The tool call belongs to this response.
 
-**v1.2 change:** step 1 launches subagents in **batches of
-`step_1_concurrent_max`** (default 1 = strict serial). This protects the user's
-MiniMax Token Plan tier (Max tier = 4-5 concurrent agents sustained) at the
-most conservative end: peak concurrent MiniMax agents never exceeds 1 in
-step 1 (+ 1 evaluador at step 3 transition = 2, well under the Max tier
-ceiling of 4-5). With 40 agents in the roster, step 1 spans 40 batches
-of ~90s each ≈ ~60 min wall time — slowest option, lowest quota pressure.
+**Strict serial rationale (v1.5 structural enforcement):** Step 1
+launches **one** propuesta per orchestrator response. Peak concurrent
+MiniMax agents in step 1 = 1 (+ 1 evaluador at step 3 transition = 2,
+well under the Max-tier ceiling of 4-5 sustained). With 40 agents in
+the roster, step 1 spans 40 responses of ~90s each ≈ ~60 min wall
+time — slowest option, lowest quota pressure, no cross-step LLM
+batching possible.
 
-**Batch loop:**
+**Loop:**
 
 **CRITICAL RULES — read carefully or this step silently fails:**
 
@@ -310,24 +302,15 @@ of ~90s each ≈ ~60 min wall time — slowest option, lowest quota pressure.
    files must exist in `$WORKSPACE/out/{id}/01-{agent}.md` (one per
    agent). NO agent may be skipped, dropped, or "represented by another".
 
-2. **`step_1_concurrent_max` is the BATCH SIZE, not the TOTAL.** Every
-   step 1 response MUST contain exactly
-   `min(step_1_concurrent_max, remaining_agents)` sibling `task()` calls.
-   The Task tool runs sibling calls from one response in parallel. Do not
-   wait between agents in the same batch; wait only after the complete batch
-   returns. If you have 5 agents and concurrent_max=3, process 5 agents in
-   2 batches (3+2), NOT 3 agents and NOT five serial 1-agent batches.
+2. **Use the FULL `agentes_a_competir` list.** Do NOT truncate it.
+   The variable holds the complete list; iterate through it ALL.
 
-3. **Use the FULL `agentes_a_competir` list.** Do NOT truncate it
-   based on concurrent_max. The variable holds the complete list;
-   iterate through it ALL.
-
-4. **After EVERY batch completes, IMMEDIATELY proceed to the next batch.**
-   Do NOT terminate step 1 after the first batch. Do NOT decide "the
-   first batch is representative". Continue until ALL agents are
+3. **After EVERY agent completes, IMMEDIATELY proceed to the next agent.**
+   Do NOT terminate step 1 after the first agent. Do NOT decide "the
+   first one is representative". Continue until ALL agents are
    processed.
 
-5. **At the end of step 1, verify with `ls`** that the file count
+4. **At the end of step 1, verify with `ls`** that the file count
    matches `len(agentes_a_competir)`. If it doesn't, identify missing
    agents and re-launch their task() calls.
 
@@ -338,9 +321,6 @@ of ~90s each ≈ ~60 min wall time — slowest option, lowest quota pressure.
 WORKSPACE=$(pwd)
 ROSTER={merged_config.agentes_a_competir}
 TOTAL={len(ROSTER)}
-BATCH_SIZE={merged_config.step_1_concurrent_max}
-if BATCH_SIZE is not a positive integer: ABORT with a clear configuration error
-NUM_BATCHES=$(( (TOTAL + BATCH_SIZE - 1) / BATCH_SIZE ))
 
 # Validate every agent's model up front. Never guess or silently fall back
 # to a different model — ABORT instead.
@@ -348,40 +328,34 @@ for each agent in ROSTER:
   model={agente_modelos[agent]}
   if model is missing or empty: ABORT with "ERROR: no validated model for {agent}"
 
-# ----- Batch k response shape (k = 0 .. NUM_BATCHES-1) -----
+# ----- Agent k response shape (k = 0 .. TOTAL-1) -----
 #
-# Each batch is ONE orchestrator response. Inside that response, the ONLY
-# tool calls are sibling `task()` invocations — REQUIRED_TASK_CALLS of them.
-# No prose, no log lines, no `ls`, no markdown between siblings. Anything
-# between them serializes them.
+# Each agent gets ONE orchestrator response. Inside that response, the ONLY
+# tool call is a single `task()` invocation for that one agent.
+# No prose, no log lines, no `ls`, no markdown. Nothing else.
 #
-# Resolve AGENTS[k] = ROSTER[start:start + REQUIRED_TASK_CALLS] where
-#   start = k * BATCH_SIZE
-#   REQUIRED_TASK_CALLS = min(BATCH_SIZE, TOTAL - start)
-#
-# Then emit exactly these REQUIRED_TASK_CALLS tool calls back-to-back,
-# with nothing in between:
+# Emit exactly this one tool call, then stop:
 task(
-  description="Proposal with {AGENTS[0]}",
-  subagent_type="{AGENTS[0]}",
+  description="Proposal with {AGENT}",
+  subagent_type="{AGENT}",
   prompt="
       Generate a technical proposal for: {user_prompt}
 
       ID: {id}
-      Model: {model_for_AGENTS[0]}
-      Agent: {AGENTS[0]}
+      Model: {model_for_AGENT}
+      Agent: {AGENT}
 
-      Write your proposal to $WORKSPACE/out/{id}/01-{AGENTS[0]}.md
+      Write your proposal to $WORKSPACE/out/{id}/01-{AGENT}.md
 
       === WORK DIRECTORY (use exclusively for empirical artifacts) ===
       Your private scratch space for this run:
-        $WORKSPACE/work/{id}/01-{AGENTS[0]}/
+        $WORKSPACE/work/{id}/01-{AGENT}/
       Use it for ANY empirical work: `cargo new`, `npm init`, downloaded
       dependencies, compiled binaries, scratch test code, intermediate
       build artifacts. Do NOT use `/tmp`, the workspace root, or any
       folder under `$WORKSPACE/out/{id}/` for these artifacts.
       Your bash session log is captured at:
-        $WORKSPACE/logs/{id}/01-{AGENTS[0]}.log
+        $WORKSPACE/logs/{id}/01-{AGENT}.log
 
       Follow your system prompt instructions.
 
@@ -432,14 +406,11 @@ task(
       enforce an arbitrary line count.
   "
 )
-# ... repeat the task() block for indices 1..REQUIRED_TASK_CALLS-1 with no
-# text or log lines between them. The orchestrator runtime treats all tool
-# calls in a single response as siblings and runs them in parallel.
 
-# After ALL batches have returned (this means: the orchestrator has issued
-# NUM_BATCHES separate responses, each containing its REQUIRED_TASK_CALLS
-# siblings, and opencode has waited for each batch to fully resolve
-# before letting the next response start):
+# After ALL agents have returned (this means: the orchestrator has issued
+# TOTAL separate responses, each containing its single `task()` call, and
+# opencode has waited for each call to fully resolve before letting the
+# next response start):
 WRITTEN=$(ls "$WORKSPACE/out/{id}/" 2>/dev/null | grep '^01-propuesta-' | wc -l)
 if [ "$WRITTEN" -ne "$TOTAL" ]; then
   log("[STEP 1] WARNING: only $WRITTEN / $TOTAL agents wrote files. Identifying missing:")
@@ -453,43 +424,39 @@ if [ "$WRITTEN" -ne "$TOTAL" ]; then
 fi
 ```
 
-**Per-batch response — what NOT to do:**
+**Per-agent response — what NOT to do:**
 
 ```
-# BAD — prose between siblings serializes them:
-log("[STEP 1] Batch k launching")
-task( subagent_type="A", ... )           # sibling 1
-log("[STEP 1] now also starting B")      # <-- this kills parallelism
-task( subagent_type="B", ... )           # sibling 2
-log("[STEP 1] batch k done")             # <-- and this too
-```
-
-```
-# GOOD — siblings only, prose lives in the NEXT response after they return:
+# BAD — extra prose around the single tool call still risks truncation:
+log("[STEP 1] launching proposal agent")
 task( subagent_type="A", ... )
-task( subagent_type="B", ... )
-task( subagent_type="C", ... )
+log("[STEP 1] done")                     # <-- this risks truncation
 ```
 
-The status logs (`[STEP 1] Batch k/N complete: X agents launched`,
+```
+# GOOD — the response is ONLY the single `task()` call:
+task( subagent_type="A", ... )
+```
+
+The status logs (`[STEP 1] Agent k/N complete`,
 `[STEP 1] Progress: Y/N agents wrote files so far`) belong to the
-response AFTER the batch returns, not inside the batch response.
+response AFTER the agent returns, not inside the agent response.
 
 **Critical implementation notes:**
 
-**PARALLELISM MODEL (revised 2026-07-13, replaces the v1.2.1
-"STRICT SERIALIZATION" wording that biased the LLM toward serial
-batches).**
+**PARALLELISM MODEL (v1.5 structural enforcement, replaces the
+v1.2.1 "STRICT SERIALIZATION" wording and the v1.2-v1.4 batched
+parallelism model).**
 
 The MiniMax Token Plan Max tier supports **4-5 concurrent agents sustained**.
 The concurrent budget at any moment is:
 
-- Step 1 (proposals): up to `step_1_concurrent_max` agents in parallel
-- Step 2 (validador, optional): up to `step_1_concurrent_max` in parallel
+- Step 1 (proposals): 1 agent (strict serial)
+- Step 2 (validador, optional): 1 agent (strict serial)
 - Step 3 (evaluador): 1 agent
 - Step 4 (sintetizador classification): 1 agent
 - Step 5 (sintetizador synthesis): 1 agent
-- Step 6 (validador, optional, candidates only): up to `step_1_concurrent_max`
+- Step 6 (validador, optional, candidates only): 1 agent (strict serial)
 - Step 7 (evaluador re-eval): 1 agent
 - Step 8 (sintetizador winner): 1 agent
 
@@ -497,60 +464,49 @@ The concurrent budget at any moment is:
 Steps form a DAG: a step may only run after all of its inputs exist on
 disk. Concretely:
 
-- All `task()` calls inside one step 1 batch are **siblings** and run
-  in parallel inside the SAME orchestrator response. Treat the batch
-  as a parallel fan-out, not a sequence.
-- Between step 1 batches, the orchestrator must wait for the previous
-  batch's `task()` calls to fully return before sending the next
-  response. The runtime does this automatically — opencode blocks the
-  next orchestrator turn until every sibling of the current turn has
-  resolved.
+- Step 1 emits one `task()` call per orchestrator response — no
+  siblings, no fan-out. The runtime waits for the previous response
+  to fully resolve before sending the next.
 - Step 2 (validador) runs after step 1 finishes (it reads the
-  `01-*.md` files written by step 1). Step 2 also fans out in
-  batches of `step_1_concurrent_max`.
+  `01-*.md` files written by step 1). Step 2 also emits one
+  `task()` call per response.
 - Steps 3, 4, 5, 6, 7, 8 may run only after their required input files
   exist. They are not "sequential by definition" — they are sequential
   because each one reads the previous step's output.
-- Steps 3+ NEVER launch in the same response as a step 1 batch. A
-  step 1 batch response contains ONLY the step 1 `task()` calls; the
-  next orchestrator turn (after the batch returns) starts the next
+- Steps 3+ NEVER launch in the same response as a step 1 agent. A
+  step 1 agent response contains ONLY the step 1 `task()` call; the
+  next orchestrator turn (after the call returns) starts the next
   step.
 
-**Per-batch response contract (NON-NEGOTIABLE):**
+**Per-agent response contract (NON-NEGOTIABLE):**
 
-1. Each batch response contains EXACTLY one thinking block (optional)
-   followed by EXACTLY `REQUIRED_TASK_CALLS` sibling `task()` calls.
+1. Each agent response contains EXACTLY one thinking block (optional)
+   followed by EXACTLY one `task()` call.
 2. There is **no text, no markdown, no `log(...)` echo, no prose, no
-   `ls`, no comment** between sibling `task()` calls. Anything between
-   them causes opencode to serialize them as a sequence instead of
-   running them in parallel.
-3. The first sibling has zero prefix text in the response other than
-   the optional thinking block. The last sibling is the LAST thing in
-   the response.
-4. Between batches, the orchestrator may add a single `[STEP 1]
-   Batch k/N complete` log line, but only AFTER all batches in the
-   current response have returned (which is automatic).
+   `ls`, no comment** before, between, or after the `task()` call
+   (other than the optional thinking block at the start). Anything
+   before or after risks truncation by the orchestrator runtime.
+3. The first character of the response (after the optional thinking
+   block) is `task(`. The last character of the response is the
+   closing `)` of the call.
 
-**Anti-pattern to avoid:** emitting the log line `[STEP 1] Batch
-$((batch_idx+1))/$NUM_BATCHES: launching ...` INSIDE the same response
-as the `task()` calls. The log line counts as "text between siblings"
-and breaks parallelism. Either put the log line at the END of the
-previous response (after the previous batch returned) or skip it.
+**Anti-pattern to avoid:** emitting a log line `[STEP 1] Agent
+k/N: launching ...` INSIDE the same response as the `task()` call. The
+log line counts as "extra text around the tool call" and risks
+truncation. Either put the log line at the END of the previous response
+(after the previous agent returned) or skip it.
 
-This guarantees peak concurrency during step 1 equals
-`step_1_concurrent_max` (default 1, strict serial) and drops to 1
-between numbered steps, which is well below the Max-tier ceiling
-of 4-5 concurrent agents.
+This guarantees peak concurrency during step 1 is exactly 1 agent,
+and drops to 1 between numbered steps, which is well below the
+Max-tier ceiling of 4-5 concurrent agents.
 
 **Other critical notes:**
-- All `task()` calls of a single batch MUST be in the SAME response,
-  with no text between them, so the Task tool runs them in parallel.
-- The response only returns after all batch `task()` complete —
-  this provides the implicit wait between batches.
-- DO NOT launch more than `step_1_concurrent_max` `task()` calls in
-  a single response. Exceeding this risks hitting the MiniMax Token
-  Plan Max-tier concurrent-agent cap (4-5 sustained).
-- If a batch's responses take > `step_1_agent_timeout_seconds` (0s
+- Each agent's `task()` call MUST be in its own orchestrator response.
+- The response only returns after the agent's `task()` completes —
+  this provides the implicit wait between agents.
+- DO NOT launch more than one step 1 `task()` call in a single
+  response. The previous v1.2-v1.4 batching was removed in v1.5.
+- If an agent's response takes > `step_1_agent_timeout_seconds` (0s
   default = unlimited), ABORT that specific subagent — log
   "`{agent}` did not converge in {timeout}s; excluded from this run"
   — and continue with whatever proposals did complete.
@@ -558,55 +514,51 @@ of 4-5 concurrent agents.
   `validacion_empirica == false` (default v1.2), step 2 is skipped
   entirely and step 3 sees only the proposals that landed in time.
 
-If after all batches a particular subagent still hasn't written
+If after all agents a particular subagent still hasn't written
 its file (the rest did), ABORT that specific subagent's contribution —
 log "`{agent}` did not converge in time; excluded from this run"
 — and continue with the proposals that did.
 
-## Step 2 — Empirical validation (parallel, optional)
+## Step 2 — Empirical validation (strict serial, optional)
 
 If `validacion_empirica == true`:
 
-Step 2 is a parallel fan-out with the **same parallelism contract** as
-step 1: every batch response contains ONLY sibling `task()` calls,
-nothing else. Chunk `agentes_a_competir` (or the surviving proposal
-list) into batches of `step_1_concurrent_max` and emit each batch as
-siblings in its own response.
+Step 2 runs in **strict serial**, one validador per orchestrator
+response (same model as step 1, since v1.5 removed batching
+everywhere). For each agent in `agentes_a_competir` (or the surviving
+proposal list), emit exactly one `task()` call in its own response.
 
 ```
-batches = chunk(agentes_a_competir, step_1_concurrent_max)
-for batch_idx, batch in enumerate(batches):
-  # Emit EXACTLY len(batch) sibling task() calls in this response,
-  # with NO prose between them.
+for agent in agentes_a_competir:
+  # Emit EXACTLY one task() call in this response, with NO prose.
   task(
-    description="Validate proposal {batch[0]}",
+    description="Validate proposal {agent}",
     subagent_type="validador",
     prompt="
-      Empirically validate the proposal at $WORKSPACE/out/{id}/01-{batch[0]}.md
+      Empirically validate the proposal at $WORKSPACE/out/{id}/01-{agent}.md
 
-      Write your report to $WORKSPACE/out/{id}/02-validacion-{batch[0]}.md
+      Write your report to $WORKSPACE/out/{id}/02-validacion-{agent}.md
 
       === WORK DIRECTORY (use exclusively for empirical artifacts) ===
       Your private scratch space for this validation:
-        $WORKSPACE/work/{id}/02-validacion-{batch[0]}/
+        $WORKSPACE/work/{id}/02-validacion-{agent}/
       Use it for any scratch projects, downloaded dependencies, build
       artifacts, or intermediate files generated while executing the
       proposal's commands. Do NOT use `/tmp`, the workspace root, or any
       folder under `$WORKSPACE/out/{id}/` for these.
       Your bash session log is captured at:
-        $WORKSPACE/logs/{id}/02-validacion-{batch[0]}.log
+        $WORKSPACE/logs/{id}/02-validacion-{agent}.log
 
       IMPORTANT: Report viability PER SECTION, not global.
 
       Follow your system prompt instructions.
     "
   )
-  # ... repeat for indices 1..len(batch)-1 with nothing between them
 ```
 
-After every batch returns, the orchestrator may log
-`[STEP 2] Batch k/N complete` in the NEXT response, then emit the next
-batch's siblings.
+After every validador returns, the orchestrator may log
+`[STEP 2] Agent k/N complete` in the NEXT response, then emit the next
+validador's call.
 
 ## Step 3 — Evaluation
 
@@ -781,13 +733,12 @@ No step 5. Step 8 selects winner from the 12 originals.
 These steps process whatever candidates step 5 produced (12 originals +
 integrada, or 12 + 12 mejoradas, or just 12). The integrator sits
 ALONGSIDE the originals in the step 8 ranking. Same parallelism
-contract as step 1/step 2: any batch of N candidates MUST be emitted
-as N sibling `task()` calls in a single response, with no prose
-between them.
+contract as step 1/step 2 (strict serial since v1.5): one candidate
+per orchestrator response, with no other tool calls in the same
+response.
 
-Step 6 (if validacion_empirica == true): validate candidates. Chunk
-the candidate list into batches of `step_1_concurrent_max`; each batch
-response emits the siblings only, nothing else.
+Step 6 (if validacion_empirica == true): validate candidates in strict
+serial — one validador `task()` call per orchestrator response.
 - If step_5_modo = sintesis_central: validate the integrada →
   `$WORKSPACE/out/{id}/06-validacion-integrada.md`,
   work dir `$WORKSPACE/work/{id}/06-validacion-integrada/`,
