@@ -5,7 +5,7 @@
 [![OpenCode](https://img.shields.io/badge/OpenCode-native-blueviolet)](https://opencode.ai)
 [![Mixture-of-Agents](https://img.shields.io/badge/inspired%20by-Mixture%20of%20Agents-orange)](https://arxiv.org/abs/2406.04692)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](#license)
-[![Status](https://img.shields.io/badge/status-v1.3--RunF-yellow)]()
+[![Status](https://img.shields.io/badge/status-v1.4-yellow)]()
 
 ## What is opencode-moa?
 
@@ -131,10 +131,10 @@ opencode-moa/
 
 ### Multi-model competition (step 1)
 
-The v1.3 bundle includes a 42-agent default roster: 6 OpenCode Go agents
-and 36 MiniMax Token Plan agents. A project-level `orquestador.json` may
+The v1.4 bundle includes the same 42-agent default roster as v1.3: 6 OpenCode Go agents
+and 36 MiniMax Token Plan agents (no agent added or removed in v1.4). A project-level `orquestador.json` may
 select a smaller cohort or add custom variants. Proposals are launched in
-batches controlled by `step_1_concurrent_max`, and each selected agent
+batches controlled by `step_1_concurrent_max` (default 1 = strict serial since v1.4), and each selected agent
 writes its own report.
 
 ### Empirical validation (step 2)
@@ -186,9 +186,9 @@ The `orquestador.json` file has 13 configurable fields plus `$schema`:
 | `modelo_objetivo` | string | required | Target model for meta-agents |
 | `validacion_empirica` | boolean | false | Enable validation steps 2 and 6 |
 | `descalificar_fallida` | boolean | false | Enable strict disqualification |
-| `step_1_concurrent_max` | integer | 3 | Proposal batch size |
-| `step_1_agent_timeout_seconds` | integer | 600 | Per-agent timeout; 0 means unlimited |
-| `step_5_modo` | string | `skip` | `sintesis_central`, `self_improve`, or `skip` |
+| `step_1_concurrent_max` | integer | 1 | Proposal batch size |
+| `step_1_agent_timeout_seconds` | integer | 0 | Per-agent timeout; 0 means unlimited |
+| `step_5_modo` | string | `sintesis_central` | `sintesis_central`, `self_improve`, or `skip` |
 | `multi_eval` | boolean | false | Enable multi-model evaluation |
 | `multi_eval_modelos` | array<string> | `[]` | Evaluator models when enabled |
 | `max_wall_clock_minutes` | integer | 0 | Global wall-clock cap; 0 means unlimited |

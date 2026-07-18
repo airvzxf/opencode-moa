@@ -14,6 +14,8 @@ Arguments:
 Optional flags (parsed by the orchestrator):
 - --force — deletes out/{id}/ before starting
 - --no-validation — disables validation steps (2 and 6)
+- --step-5-modo={sintesis_central|self_improve|skip} — overrides the `step_5_modo` config field for this run
+- --multi-eval={true|false} — overrides the `multi_eval` config field for this run
 
 Behavior:
 1. Read and merge orquestador.json (user + project + args)
@@ -26,6 +28,7 @@ Examples:
 /orquestar "Design a REST API for inventory management with JWT auth" auth-jwt
 /orquestar "List the 7 colors of the rainbow in order"  # id auto-slugified: "list-the-7-colors"
 /orquestar --force "Redo the calculation" calc-v2
+/orquestar --step-5-modo=sintesis_central --multi-eval=false "Design a Rust CLI" rust-cli-v1
 
 Expected output:
 - out/auth-jwt/01-propuesta-glm.md
