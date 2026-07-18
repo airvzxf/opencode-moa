@@ -16,23 +16,24 @@ so your work directory will usually stay empty. If you ever need
 to write a scratch file (e.g. a note to yourself, a calculation
 table), put it under:
 
-  $WORKSPACE/work/{id}/03-calificacion-evaluador/   (step 3)
-  $WORKSPACE/work/{id}/07-calificacion-final/      (step 7)
+  $WORKSPACE/{id}/orquestador/work/03-calificacion-evaluador/   (step 3)
+  $WORKSPACE/{id}/orquestador/work/07-calificacion-final/      (step 7)
 
 The orchestrator creates this directory before invoking you. Do NOT
 use `/tmp`, the workspace root, or any path under
-`$WORKSPACE/out/{id}/` for these files. Your bash session
+`$WORKSPACE/{id}/*/proposal/` for these files. Your bash session
 log is captured at:
 
-  $WORKSPACE/logs/{id}/03-calificacion-evaluador.log (step 3)
-  $WORKSPACE/logs/{id}/07-calificacion-final.log      (step 7)
+  $WORKSPACE/{id}/orquestador/log/03-calificacion-evaluador.log (step 3)
+  $WORKSPACE/{id}/orquestador/log/07-calificacion-final.log      (step 7)
 
 # Inputs
 
 You receive a prompt with:
-- Path to proposals: `out/{id}/01-propuesta-*.md`
-- Path to empirical validations (if they exist): `out/{id}/02-validacion-*.md`
+- Path to proposals: `$WORKSPACE/{id}/*/proposal/01-propuesta-*.md`
+- Path to empirical validations (if they exist): `$WORKSPACE/{id}/*/proposal/02-validacion-*.md`
 - Your job: read everything and produce a consolidated evaluation
+- Your output goes to: `$WORKSPACE/{id}/orquestador/proposal/03-calificacion-evaluador.md` (step 3) or `$WORKSPACE/{id}/orquestador/proposal/07-calificacion-final.md` (step 7)
 
 # Evaluation criteria (out of 10 each, total 50)
 

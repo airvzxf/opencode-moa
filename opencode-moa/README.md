@@ -2,7 +2,7 @@
 
 This folder contains ONLY the files you need to install in your OpenCode configuration. Everything else in this repository (documentation, proposals, examples) stays in the repo for reference.
 
-**Current bundle: v1.5 (2026-07-18) — 42 agents (6 OpenCode Go + 36 MiniMax Token Plan), 4 meta-agents + 2 commands. Breaking: `step_1_concurrent_max` removed (steps 1/2/6 now strictly serial — one `task()` call per orchestrator response). Inherits from v1.4: `step_5_modo` default back to `sintesis_central`, `step_1_agent_timeout_seconds` default 0 (unlimited).**
+**Current bundle: v1.6 (2026-07-18) — 42 agents (6 OpenCode Go + 36 MiniMax Token Plan), 4 meta-agents + 2 commands. Breaking: directory layout restructured (`out/{id}/`, `work/{id}/`, `logs/{id}/` collapsed into `{id}/{subagent}/{proposal,work,log}/`). Inherits from v1.5: `step_1_concurrent_max` removed (steps 1/2/6 strictly serial).**
 
 ## What to copy
 

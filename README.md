@@ -5,7 +5,7 @@
 [![OpenCode](https://img.shields.io/badge/OpenCode-native-blueviolet)](https://opencode.ai)
 [![Mixture-of-Agents](https://img.shields.io/badge/inspired%20by-Mixture%20of%20Agents-orange)](https://arxiv.org/abs/2406.04692)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](#license)
-[![Status](https://img.shields.io/badge/status-v1.4-yellow)]()
+[![Status](https://img.shields.io/badge/status-v1.6-yellow)]()
 
 ## What is opencode-moa?
 
@@ -61,38 +61,46 @@ From the OpenCode TUI:
 
 ### 3. Inspect results
 
-Each run produces THREE sibling directories — one for reports
-(`.md`), one for empirical scratch space, one for bash logs:
+Each run produces **one root directory per id** with one folder per
+subagent. Every subagent folder has the same `{proposal,work,log}/`
+triplet:
 
 ```
-out/auth-jwt/                          ← reports (.md)
-├── 01-propuesta-{agente}.md            ← one per configured proposal agent
-├── 02-validacion-{agente}.md           ← when empirical validation is enabled
-├── 03-calificacion-evaluador.md
-├── 04-clasificacion.md
-├── 05-propuesta-integrada.md            ← `sintesis_central` mode
-├── 07-calificacion-final.md
-├── 08-ganador.md
-└── 09-sumario.md
-
-work/auth-jwt/                          ← empirical artifacts (per subagent)
-├── 01-propuesta-{agente}/              ← scaffolds, dependencies, binaries
-├── 02-validacion-{agente}/             ← per-section viability scratch
-├── 03-calificacion-evaluador/          ← usually empty (pure reasoning)
-└── ...
-
-logs/auth-jwt/                          ← bash session log per subagent
-├── 01-propuesta-{agente}.log
-├── 02-validacion-{agente}.log
-└── ...
+auth-jwt/                                ← the run id (matches $ARGUMENTS $2)
+├── orquestador/                         ← owns meta-step outputs (03-10)
+│   ├── proposal/
+│   │   ├── 03-calificacion-evaluador.md
+│   │   ├── 04-clasificacion.md
+│   │   ├── 05-propuesta-integrada.md
+│   │   ├── 06-validacion-integrada.md
+│   │   ├── 07-calificacion-final.md
+│   │   ├── 08-ganador.md
+│   │   ├── 09-sumario.md
+│   │   └── 10-sintesis-cross-iter.md
+│   ├── work/                            ← shared validador/sintetizador scratch
+│   │   ├── 02-validacion-{agente}/
+│   │   ├── 05-propuesta-integrada/
+│   │   └── 06-validacion-integrada/
+│   └── log/
+│       ├── 02-validacion-{agente}.log
+│       └── 05/06-*.log
+└── {agente}/                            ← one folder per agent in agentes_a_competir
+    ├── proposal/
+    │   ├── 01-propuesta-{agente}.md
+    │   └── 02-validacion-{agente}.md    ← only if validacion_empirica
+    ├── work/01-{agente}/                ← subagent's empirical scratch
+    └── log/01-{agente}.log              ← bash session log
 ```
 
-The `work/` directory is the subagent's private scratch space —
-the orchestrator creates it before invoking each agent and tells
-the agent to put ALL empirical work there. No more scattered
-`/tmp/opencode-moa-{test}/rust-gui-popup/` directories. Naming
-rule: the `work/` subdir uses the same prefix as the output file
-(without `.md`), so `01-propuesta-glm.md` ↔ `01-propuesta-glm/`.
+The `{agente}/work/` and `{orquestador}/work/` directories are the
+subagent's private scratch space — the orchestrator creates them
+before invoking each agent and tells the agent to put ALL empirical
+work there. No more scattered `/tmp/opencode-moa-{test}/{project}/`
+directories. Naming rule: the `work/` subdir uses the same step-prefix
+as the output file (without `.md`), so `01-propuesta-glm.md` ↔
+`01-propuesta-glm/`. The validador's scratch lives under
+`orquestador/` because the validador is a shared subagent owned by
+the orquestador (it validates N candidates, not its own).
 
 ## Repository structure
 

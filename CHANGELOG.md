@@ -2,6 +2,72 @@
 
 All notable changes to `opencode-moa` are documented here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6] - 2026-07-18
+
+### Changed (BREAKING)
+
+- **Directory layout restructured.** The three sibling directories
+  (`out/{id}/`, `work/{id}/`, `logs/{id}/`) under `$WORKSPACE/` are
+  collapsed into **one root per run id**, `$WORKSPACE/{id}/`, with
+  one folder per subagent. Every subagent folder has the same
+  `{proposal,work,log}/` triplet.
+
+  ```
+  $WORKSPACE/{id}/
+  ├── orquestador/                        ← owns meta-step outputs (03-10)
+  │   ├── proposal/                       ← .md files (03, 04, 05-integrada, 06-validacion-integrada, 07, 08, 09-sumario, 10-cross-iter)
+  │   ├── work/                           ← shared validador + sintetizador scratch (per-step-prefix subdirs)
+  │   └── log/                            ← bash session logs (per-step-prefix .log files)
+  └── {agente}/                           ← one folder per agentes_a_competir entry (literal name, e.g. propuesta-glm, propuesta-minimax-baseline-01)
+      ├── proposal/                       ← 01-propuesta-{agente}.md, 02-validacion-{agente}.md, 05-mejorada-{agente}.md (self_improve), 06-validacion-mejorada-{agente}.md
+      ├── work/01-{agente}/               ← step 1 empirical scratch
+      └── log/01-{agente}.log             ← bash session log
+  ```
+
+  **What stays the same**: step numbers (01-10), naming rules
+  (`{step-prefix}-{agente}.md`), step semantics, agent frontmatter,
+  `agentes_a_competir`, all configuration fields.
+
+  **What changes**: every subagent's work directory now lives under
+  `{id}/{subagent}/work/` (instead of `work/{id}/{step-prefix}/`); the
+  validador's scratch moved from `work/{id}/02-validacion-{agente}/`
+  to `{id}/orquestador/work/02-validacion-{agente}/` (the validador
+  is a shared subagent owned by the orquestador, so its scratch lives
+  there); the `--force` flag now does a single `rm -rf {id}/` instead
+  of three separate `rm -rf`s.
+
+  **Rationale**: the v1.5 layout required per-step-prefix subdirs
+  under `work/{id}/` and `logs/{id}/`, scattered across three
+  siblings. v1.6 groups everything by subagent identity, which makes
+  cleanup a single `rm -rf {id}/`, makes per-agent isolation
+  clearer (each `{agente}/work/` is bounded to that one agent), and
+  lets each `{agente}/` folder be self-contained: the proposal and
+  its validation report live together under `proposal/`.
+
+  **Migration**: no auto-migration script. Runs started under v1.5
+  keep their `out/{id}/`, `work/{id}/`, `logs/{id}/` trees intact.
+  The historical bitácoras
+  (`docs/research/experiments/2026-07-13-*.md` and later) reference
+  the v1.5 paths as historical evidence and are not modified. New
+  runs use v1.6.
+
+### Notes
+
+- The `$schema` URL was bumped to
+  `https://opencode-moa.dev/schemas/orquestador.v1.6.json`. v1.5
+  configs that omit the `$schema` field continue to parse; only the
+  default values changed.
+- `opencode-moa/AGENTS.md` §12 was rewritten entirely to describe
+  the v1.6 layout (the v1.5 "three sibling directories" subsection
+  is replaced by "Per-subagent directory tree (v1.6)").
+- All 42 `propuesta-*.md` agents had their "## Work directory"
+  section and the "Typical prompt" line rewritten; no semantic
+  changes.
+- The `orquestador.json` schema is otherwise identical to v1.5;
+  only the version field and `$schema` URL changed.
+- Wall-clock, cost, and behaviour are unchanged from v1.5; the
+  restructure is purely organisational.
+
 ## [1.5] - 2026-07-18
 
 ### Removed (BREAKING)

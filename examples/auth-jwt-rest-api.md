@@ -209,7 +209,7 @@ After getting the winning proposal:
   `orquestador.json`
 - **Step 5 mode (default: `sintesis_central` since v1.4)**: the
   orchestrator produces one consolidated proposal
-  (`out/{id}/05-propuesta-integrada.md`) by default. To opt out, set
-  `"step_5_modo": "self_improve"` to produce per-agent improvements
-  instead, or `"step_5_modo": "skip"` to skip step 5 entirely and rank
-  the 12 originals directly.
+  (`{id}/orquestador/proposal/05-propuesta-integrada.md`) by default.
+  To opt out, set `"step_5_modo": "self_improve"` to produce per-agent
+  improvements instead, or `"step_5_modo": "skip"` to skip step 5
+  entirely and rank the 12 originals directly.

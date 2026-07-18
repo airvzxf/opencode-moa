@@ -12,7 +12,7 @@ Arguments:
 - $2 = id (optional; if missing, the orchestrator slugifies $1)
 
 Optional flags (parsed by the orchestrator):
-- --force — deletes out/{id}/ before starting
+- --force — deletes {id}/ before starting (the entire per-run tree)
 - --no-validation — disables validation steps (2 and 6)
 - --step-5-modo={sintesis_central|self_improve|skip} — overrides the `step_5_modo` config field for this run
 - --multi-eval={true|false} — overrides the `multi_eval` config field for this run
@@ -21,7 +21,7 @@ Behavior:
 1. Read and merge orquestador.json (user + project + args)
 2. Validate configuration
 3. Execute steps 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9
-4. Write out/{id}/09-sumario.md with final score
+4. Write {id}/orquestador/proposal/09-sumario.md with final score
 5. Show summary to user
 
 Examples:
@@ -30,10 +30,14 @@ Examples:
 /orquestar --force "Redo the calculation" calc-v2
 /orquestar --step-5-modo=sintesis_central --multi-eval=false "Design a Rust CLI" rust-cli-v1
 
-Expected output:
-- out/auth-jwt/01-propuesta-glm.md
-- out/auth-jwt/01-propuesta-kimi.md
-- out/auth-jwt/01-propuesta-mimo.md
-- ... (all flow files)
-- out/auth-jwt/08-ganador.md
-- out/auth-jwt/09-sumario.md
+Expected output (v1.6 layout: `{id}/{subagent}/{proposal,work,log}/`):
+- {auth-jwt}/orquestador/proposal/03-calificacion-evaluador.md
+- {auth-jwt}/orquestador/proposal/04-clasificacion.md
+- {auth-jwt}/orquestador/proposal/05-propuesta-integrada.md
+- {auth-jwt}/orquestador/proposal/07-calificacion-final.md
+- {auth-jwt}/orquestador/proposal/08-ganador.md
+- {auth-jwt}/orquestador/proposal/09-sumario.md
+- {auth-jwt}/propuesta-glm/proposal/01-propuesta-glm.md
+- {auth-jwt}/propuesta-kimi/proposal/01-propuesta-kimi.md
+- {auth-jwt}/propuesta-mimo/proposal/01-propuesta-mimo.md
+- ... (one folder per agent in agentes_a_competir)

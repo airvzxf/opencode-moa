@@ -26,19 +26,18 @@ agentes removed.
 
 ### v1.3.x additions shipped
 
-- [x] **Per-subagent work directory convention** (`work/` + `logs/`
-  first-class siblings of `out/`, created in step 0). Solves the
-  "where do I put my scratch artifacts" problem that scattered
-  `/tmp/opencode-moa-v5-test/rust-gui-popup/`, `iced-test/`,
-  `gtk4-overlay-test/` etc. across the filesystem in the v5
-  experiment. Each subagent now writes cargo scaffolds, downloaded
-  deps, compiled binaries, and bash session logs into a deterministic
-  location under `work/{id}/{step-prefix}/` and
-  `logs/{id}/{step-prefix}.log`. Naming rule mirrors the
-  output file prefix (e.g. `01-propuesta-minimax-baseline-04` →
-  `01-propuesta-minimax-baseline-04/`). See `opencode-moa/AGENTS.md`
-  §12 for the full table. `--force` cleans all three siblings for
-  the run.
+- [x] **Per-subagent directory convention (v1.6)**. Each run lives
+  under `$WORKSPACE/{id}/` with one folder per subagent (orquestador
+  + one per propuesta). Each folder has the same `{proposal,work,log}/`
+  triplet. Solves the "where do I put my scratch artifacts" problem
+  that scattered `/tmp/opencode-moa-v5-test/rust-gui-popup/`,
+  `iced-test/`, `gtk4-overlay-test/` etc. across the filesystem in the
+  v5 experiment. v1.6 supersedes the v1.5 `work/`+`logs/` siblings of
+  `out/` (cleaned up in v1.6 — those three siblings are now one
+  per-subagent tree). Naming rule mirrors the output file prefix
+  (e.g. `01-propuesta-{agente}.md` → `{agente}/work/01-{agente}/`).
+  See `opencode-moa/AGENTS.md` §12 for the full table. `--force`
+  does a single `rm -rf {id}/`.
 - [x] **Run D validated `sintesis_central` + `validacion_empirica: true` end-to-end** on a 6-baseline minimum cohort (fib-rust-cli, 2026-07-13). This is the first run with the full pipeline (steps 1–10) executing without synthetic substitutions. Key empirical confirmations:
   - **§6.2 evidence at last:** integrated proposal 45/50 beats best original 44/50 by +1 point on a uniform-model 6-baseline cohort. First methodologically clean §6.2 evidence.
   - **§6.3 with uniform model:** 6 identical-input proposals converged on 10 ideas (4-6 of 6 majority on each). Cross-pollination is a property of LLM sampling temperature, not a property of model diversity. Refines §6.3.
@@ -174,7 +173,7 @@ agentes removed.
 
 - [ ] **Cost estimation** — OpenCode session logs include token counts. Add a post-run cost estimator that summarizes the per-model token usage and approximate cost (requires user-provided pricing data).
 
-- [ ] **Git integration** — optional auto-commit of `out/{id}/` after each run. Users can opt-in by adding `"git_autocommit": true` to `orquestador.json`. Useful for tracking run history.
+- [ ] **Git integration** — optional auto-commit of `{id}/` after each run. Users can opt-in by adding `"git_autocommit": true` to `orquestador.json`. Useful for tracking run history.
 
 - [ ] **Better error messages** — when a subagent fails, the error message should include enough context to debug (current model, current step, input file paths, etc.). Currently errors are minimal.
 
@@ -188,13 +187,13 @@ agentes removed.
 
 ### v0.4 — UI and ergonomics
 
-- [ ] **Web dashboard** — a simple HTML viewer for `out/{id}/` that shows the flow visually (proposals → validations → evaluations → winner)
+- [ ] **Web dashboard** — a simple HTML viewer for `{id}/` (specifically `{id}/*/proposal/`) that shows the flow visually (proposals → validations → evaluations → winner)
 - [ ] **Interactive re-run** — pick a step from a previous run and re-run only that step with feedback
 - [ ] **Diff view** — see what changed between runs of the same `{id}`
 
 ### v0.5 — Distributed execution
 
-- [ ] **Multi-machine resume** — `out/` syncing across machines (via git or cloud storage)
+- [ ] **Multi-machine resume** — `{id}/` syncing across machines (via git or cloud storage)
 - [ ] **Cloud execution** — run heavy validations on a remote worker (e.g., a powerful VPS) while the orchestrator stays on the local machine
 - [ ] **Cached evaluations** — if the same proposal was evaluated before, reuse the score
 
