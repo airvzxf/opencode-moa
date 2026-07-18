@@ -12,7 +12,6 @@ Arguments:
 - $2 = id (optional; if missing, the orchestrator slugifies $1)
 
 Optional flags (parsed by the orchestrator):
-- --smoke-test={true|false|auto} — overrides smoke_test from config
 - --force — deletes out/{id}/ before starting
 - --no-validation — disables validation steps (2 and 6)
 
@@ -26,7 +25,6 @@ Behavior:
 Examples:
 /orquestar "Design a REST API for inventory management with JWT auth" auth-jwt
 /orquestar "List the 7 colors of the rainbow in order"  # id auto-slugified: "list-the-7-colors"
-/orquestar --smoke-test=true "Test the pipeline" smoke
 /orquestar --force "Redo the calculation" calc-v2
 
 Expected output:

@@ -26,8 +26,7 @@
   "max_iteraciones": 5,
   "umbral_convergencia": 0.5,
   "validacion_empirica": false,
-  "descalificar_fallida": false,
-  "smoke_test": false
+  "descalificar_fallida": false
 }
 ```
 

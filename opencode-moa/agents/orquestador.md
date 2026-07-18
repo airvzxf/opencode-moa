@@ -64,8 +64,8 @@ pure reasoning and only produce one .md).
 1. Read $ARGUMENTS (from command /orquestar)
    - $1 = user prompt
    - $2 = id (optional; if missing, slugify $1)
-   - Additional flags: --smoke-test={true|false|auto},
-     --force, --step-5-modo={sintesis_central|self_improve|skip},
+   - Additional flags: --force,
+     --step-5-modo={sintesis_central|self_improve|skip},
      --multi-eval={true|false}
 2. Validate id: must match ^[a-z0-9][a-z0-9-]{2,29}$
 3. Apply merge of configuration:
@@ -80,7 +80,6 @@ pure reasoning and only produce one .md).
       - modelo_objetivo (string) — required
       - validacion_empirica (bool) — default FALSE (changed from TRUE in v1.1; see opencode bug #35073)
       - descalificar_fallida (bool) — default false
-      - smoke_test (bool|"auto") — default false
       - step_1_concurrent_max (int) [NEW v1.2] — default 3 (protect MiniMax tier concurrency cap)
       - step_1_agent_timeout_seconds (int) [NEW v1.2] — default 600 (hard cap per propuesta subagent)
       - step_5_modo (string) [NEW v1.1] — "sintesis_central" | "self_improve" | "skip"
@@ -227,7 +226,6 @@ When merging, the hardcoded v1.2 defaults before any JSON override are:
   "modelo_objetivo": "minimax-coding-plan/MiniMax-M3",
   "validacion_empirica": false,
   "descalificar_fallida": false,
-  "smoke_test": false,
   "step_1_concurrent_max": 3,
   "step_1_agent_timeout_seconds": 600,
   "step_5_modo": "skip",
@@ -851,13 +849,3 @@ After each step:
 - If a subagent fails, retry 1 time. If it fails again, abort with clear message.
 - If the JSON is malformed, abort with instructions on how to fix it.
 - If a subagent file is missing, abort with clear instruction.
-
-## Smoke test support
-
-If `--smoke-test=true` in $ARGUMENTS, OR if merged config has `smoke_test: true`:
-- Replace user_prompt with "List the 7 colors of the rainbow in order"
-- This validates the pipeline without spending many tokens
-
-If `smoke_test: "auto"`:
-- If user_prompt length < 50 chars AND doesn't contain "design" or "implement" or "build": use smoke test
-- Otherwise: use real prompt

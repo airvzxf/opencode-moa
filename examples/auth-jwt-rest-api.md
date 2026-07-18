@@ -207,6 +207,5 @@ After getting the winning proposal:
   `agentes_a_competir` and create the matching `propuesta-{agent}.md`
 - **Stricter validation**: set `"descalificar_fallida": true` in
   `orquestador.json`
-- **Smoke test mode**: set `"smoke_test": "auto"` for small prompts
 - **Integrated synthesis**: set `"step_5_modo": "sintesis_central"` to
   produce one consolidated proposal instead of per-agent improvements
