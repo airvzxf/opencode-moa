@@ -177,7 +177,7 @@ the bitácora §2 model table and what the user actually wants).
 description: Generates or improves technical proposals (MiMo v2.5 Pro variant via opencode-go)
 mode: subagent
 model: opencode-go/mimo-v2.5-pro
-temperature: 0.7
+temperature: 1.0
 ---
 ```
 
@@ -214,7 +214,7 @@ Expected output:
 description: Generates or improves technical proposals (MiMo v2.5 Pro variant via opencode-go)
 mode: subagent
 model: opencode-go/mimo-v2.5-pro
-temperature: 0.7
+temperature: 1.0
 ---
 ```
 
