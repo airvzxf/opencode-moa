@@ -6,17 +6,38 @@ and the reasoning behind the default `agentes_a_competir` roster.
 Read this **before** running `./install.sh` and **before** invoking
 `/orquestar` for the first time.
 
-## 1. The `agentes_a_competir` default roster (v1.7, 2026-07-18)
+## 1. The `agentes_a_competir` default roster (v1.8, 2026-07-18)
 
-The default `opencode-moa/orquestador.json` ships with **64 agentes_a_competir**
-(6 OpenCode Go + 58 MiniMax Token Plan). This is the v1.7 revision
-applied after the 2026-07-13 v5 experiment
-(`docs/research/experiments/2026-07-13-rust-gui-popup-v5.md`) validated
-the cost-and-quality rationale for the v1.3 trim, then extended with
-the restore of `propuesta-minimax-maintainable` (v1.3.1 addendum),
-then replaced the sparse Group C sweeps with a full T×P matrix (v1.7).
+The default `opencode-moa/orquestador.json` ships with **55 agentes_a_competir**
+(6 OpenCode Go + 49 MiniMax Token Plan). This is the v1.8 revision
+applied on 2026-07-18. v1.7 → v1.8 replaces the dense T×P sweep matrix
+(T×P×3 replicas = 45 agents) with a **clone-variable T-only sweep**
+(6 T values × variable clone counts: T00×3, T02×3, T04×6, T06×6,
+T08×6, T10×12 = **36 agents**). The 13 Grupo B variants are unchanged.
 
-**v1.3 → v1.7 changes (2026-07-18):**
+**v1.7 → v1.8 changes (2026-07-18):**
+
+- **MiniMax Token Plan Group C: 45 → 36 agents.** v1.7's T×P sweep
+  matrix (5 T × 3 P × 3 replicas = 45) was a dense two-axis design
+  with no top_p signal beyond P=0.5/1.0 being meaningful for short
+  prompts. v1.8 collapses it to a **single-axis T sweep with variable
+  clone counts**: 6 T values {0.0, 0.2, 0.4, 0.6, 0.8, 1.0}. The
+  clone count grows monotonically with T (3, 3, 6, 6, 6, 12) to give
+  the variance-prone end (T=1.0) more replicas for the intrinsic-
+  variance baseline. Total: 9 deletions.
+- **T range tightened to spec.** v1.7 included out-of-spec T=1.5 and
+  T=2.0 (Anthropic spec is 0.0–1.0). v1.8 stays at 1.0 inclusive,
+  removing the clamp-discovery research cell. T=0.0 stays as the
+  deterministic-control cell.
+- **top_p dropped from the sweep.** The v1.7 3-P sweep × 3 clones was
+  the dominant source of duplicate signal: 27 of the 45 agents differed
+  only by top_p, and short prompts (most proposals) saturate the
+  nucleus regardless of P. v1.8 fixes `top_p` out of the prompt and
+  reclaims those replicas for more useful T-coverage.
+- **Roster total: 64 → 55.** The cost-coin flips: fewer agents but
+  roughly 12 more replicas at the high-variance T=1.0 cell.
+
+**v1.3 → v1.7 changes (2026-07-18, prior revision):**
 
 - **MiniMax Token Plan: 36 → 58 agents.** The v1.3 Group C roster was
   a sparse one-axis sweep (4 T + 1 P + 2 combos = 7 agents) plus 15
@@ -34,11 +55,10 @@ then replaced the sparse Group C sweeps with a full T×P matrix (v1.7).
 - **T=0.0 and T=2.0 added** (out-of-Anthropic-spec — measures whether
   MiniMax clamps). T=0.0 + P=0.0 is the deterministic-control cell.
 - **3 replicas per cell** (`-01`, `-02`, `-03` of `03`) — the 3
-  replicas of each (T,P) pair are byte-identical except for the
-  description string ("clone NN of 03") so they can be distinguished
-  in grep/logs while preserving identical LLM inputs. The original
-  15-baseline intrinsic-variance signal now exists at every T×P cell,
-  not just T=0.7.
+  replicas of each (T,P) pair were byte-identical except for the
+  description string ("clone NN of 03"). The v1.7 → v1.8 revision
+  scaled up replica counts at the high-variance T end and dropped
+  the redundant top_p axis.
 
 **v1.2 → v1.3 changes (2026-07-13):**
 
@@ -48,7 +68,7 @@ then replaced the sparse Group C sweeps with a full T×P matrix (v1.7).
 - **Added 5 baselines** (10 → 15). `propuesta-minimax-baseline-11..15`. Strengthens statistical base for the intrinsic-variance control cohort.
 - **Added 8 Grupo B prompt-injection variants** (4 → 12, now 13 with maintainable restore). All use the v1.3 `⚠️ ROLE OVERRIDE` directive prepended at the top of the agent file. New variants: `a11y` (accessibility), `errors` (Result + thiserror), `portable` (cross-platform), `i18n` (internationalization), `rustdoc` (documentation completeness), `observability` (structured tracing + metrics), `ci-github` (GitHub Actions CI), `cd-releases` (GitHub Releases distribution).
 
-### Roster breakdown (v1.7)
+### Roster breakdown (v1.8)
 
 **6 OpenCode Go agents** (default roster, included since v1.3):
 
@@ -61,41 +81,46 @@ then replaced the sparse Group C sweeps with a full T×P matrix (v1.7).
 | 5 | `propuesta-mimo` | `opencode-go/mimo-v2.5-pro` | $0.36 | Only iced 0.14 verified |
 | 6 | `propuesta-qwen37-plus` | `opencode-go/qwen3.7-plus` | $0.08 | Only GTK3 representative + cheapest legitimate |
 
-**58 MiniMax Token Plan agents** (all bind to `model: minimax-coding-plan/MiniMax-M3`):
+**49 MiniMax Token Plan agents** (all bind to `model: minimax-coding-plan/MiniMax-M3`):
 
 | Group | # agents | Naming | Rationale |
 |---|---:|---|---|
-| B — Prompt injection | 13 | `propuesta-minimax-{creative,security-first,minimal,testable,maintainable,a11y,errors,portable,i18n,rustdoc,observability,ci-github,cd-releases}` | Each adds a priority directive **as the first content** of the system prompt (v1.2.1+v1.3 inyectado fix). The directive overrides all other principles. 8 new variants in v1.3 cover accessibility, error handling, portability, i18n, documentation, observability, CI, CD. `maintainable` was restored in v1.3.1 from the `.v1.2-preserved` backup as a 13th variant (orthogonal to `testable`). |
-| C — T×P sweep matrix | 45 | `propuesta-minimax-T{P}P{P}-{01..03}` | 5 T values {0.0, 0.5, 1.0, 1.5, 2.0} × 3 P values {0.0, 0.5, 1.0} × 3 replicas. Replaces the v1.3 sparse one-axis sweeps (4 T + 1 P + 2 combos = 7). T=0.0 and T=2.0 are out-of-Anthropic-spec — measures MiniMax clamp behavior. P=0.0 is the greedy-control cell. The 3 replicas per (T,P) cell provide intrinsic-variance signal at every parameter combination (formerly lived only at T=0.7 in the 15 baselines). The replicas are byte-identical except for the description string ("clone NN of 03"). |
-| **Total** | **58** | | |
+| B — Prompt injection | 13 | `propuesta-minimax-{creative,security-first,minimal,testable,maintainable,a11y,errors,portable,i18n,rustdoc,observability,ci-github,cd-releases}` | Each adds a priority directive **as the first content** of the system prompt (v1.2.1+v1.3 inyectado fix). The directive overrides all other principles. 8 new variants in v1.3 cover accessibility, error handling, portability, i18n, documentation, observability, CI, CD. `maintainable` was restored in v1.3.1 from the `.v1.2-preserved` backup as a 13th variant (orthogonal to `testable`). v1.8 carries them over unchanged. |
+| C — T-only sweep (v1.8) | 36 | `propuesta-minimax-T{T}-{01..NN}` | 6 T values {0.0, 0.2, 0.4, 0.6, 0.8, 1.0} × variable clone counts {3, 3, 6, 6, 6, 12} = 36 agents. Replaces the v1.7 T×P matrix (5 T × 3 P × 3 = 45): top_p fixed out of the prompt (short proposals saturate the nucleus regardless of P), T range tightened to Anthropic spec (0.0–1.0 inclusive). Clone count grows monotonically with T so the variance-prone end (T=1.0, 12 clones) gets the largest intrinsic-variance baseline cohort. Replicas are byte-identical except for the description string ("clone NN of NN"). |
+| **Total** | **49** | | |
 
-**Grand total: 6 + 58 = 64 agentes_a_competir.**
+**Grand total: 6 + 49 = 55 agentes_a_competir.**
 
-### Cost estimate (per run, extrapolated from Run C v5)
+### Cost estimate (per run, extrapolated from Run C v5 and projected for v1.8)
 
 - OCG (6 of 11 kept): ~$2.10 vs $4.44 full (–$2.34, –53%)
-- MiniMax (58 vs 36): ~$0.22 vs $0.14 (+$0.08, +57%) — the 22 extra replicas share the same prompt prefix, so cache hit rate stays high (~91%) and marginal cost is low
-- **Total:** ~$2.32 vs $2.24 (+$0.08, +4%)
+- MiniMax (49 in v1.8 vs 58 in v1.7 vs 36 in v1.3): ~$0.18 vs ~$0.22 vs ~$0.14 — the v1.8 trim of 9 T×P duplicates drops the average per-run cost vs v1.7; v1.8 is still more expensive than v1.3 because the 12 T=1.0 clones share the same prompt prefix and benefit from ~91% cache hits, same as v1.7
+- **Total:** ~$2.28 (vs ~$2.32 in v1.7, –$0.04, –2%); step 1 wall time drops proportionally to 55 agents
 - Cache hit rate: ~91% of input tokens served from cache (the dominant cost-optimization factor)
 
 ### Wall-clock estimate (per run, strict serial)
 
-- Step 1: 64 agentes / 1 per response = 64 responses × ~3 min = ~192 min (serialised; well under Max-tier ceiling)
+- Step 1: 55 agentes / 1 per response = 55 responses × ~3 min = ~165 min (serialised; well under Max-tier ceiling)
 - Steps 3-9: ~30 min (unchanged)
-- **Total:** ~222 min (vs ~156 min in v1.3, +66 min for the 22 extra MiniMax agents; OCG, evaluator, sintetizador unchanged)
+- **Total:** ~195 min (vs ~222 min in v1.7, –27 min for the 9 removed MiniMax agents; OCG, evaluator, sintetizador unchanged)
 
-### Drop rationale (v1.3 → v1.7, 2026-07-18)
+### Drop rationale (v1.7 → v1.8, 2026-07-18)
 
-The complete rationale is in `docs/research/experiments/2026-07-13-rust-gui-popup-v5.md` §8 and `docs/papers/DRAFT-multi-model-orchestration.md` §5.5. Summary:
+Inherits the v1.3 → v1.7 rationale in `docs/research/experiments/2026-07-13-rust-gui-popup-v5.md` §8 and `docs/papers/DRAFT-multi-model-orchestration.md` §5.5. The v1.8 layer adds:
 
-1. **All agents with fabricated verifications removed** (5 in v1.2.1: `glm-52`, `qwen36-plus`, `qwen37-max`, and 4 MiniMax `gtk4 0.11` agentes with `rustc 1.92` hallucinations — only `qwen37-max` was in the bundle; the 4 gtk4 0.11 MiniMax were T-sweep variants now removed). The remaining v1.3 roster has zero fabricators.
-2. **All redundant-stack agentes removed.** When 7 proposals all chose Tauri without producing on-disk artifacts (v5 §3.2), or when 5 chose `eframe 0.33` with identical recipes, the duplicates are noise.
-3. **All agents with no unique winning contribution removed.** E.g., `mimo-v25` (eframe 0.30) had the same score (34/50) as `mimo` (iced 0.14) but no additional stack coverage.
-4. **Top_k sweep removed entirely.** The clamp-discovery insight
-   (whether MiniMax clamps out-of-spec temperature) now lives in the
-   `propuesta-minimax-T20P10-{01..03}` cell of the sweep matrix
-   (T=2.0 + top_p=1.0 = full distribution + out-of-spec temp). The
-   standalone `K*` agents added nothing.
+1. **All top_p-sweep duplicates removed.** Of the 27 agents that
+   differed only by `top_p`, none produced a proposal whose chosen
+   tech stack would have differed if `top_p` had been fixed at 0.5.
+   Short proposals saturate the nucleus within a few hundred tokens.
+2. **Out-of-spec T=1.5 and T=2.0 cells removed.** Per Anthropic spec
+   `temperature` is bounded to 0.0–1.0. The v1.7 clamp-discovery
+   insight (T=2.0 with top_p=1.0) had no value beyond confirming
+   that MiniMax clamps — clamp-discovery is no longer the goal.
+3. **Larger clone cohort at high-variance T=1.0.** The 12 T=1.0
+   clones form the intrinsic-variance baseline for the spec edge;
+   the LLM produces 12 independent outputs at the highest-entropy
+   setting, giving the sintetizador enough signal to spot
+   temperature-driven drift vs. pure noise.
 
 ## 2. Model-binding conflict: `propuesta-mimo.md` and the `opencode-go/minimax-m3` model
 
@@ -415,7 +440,7 @@ only one. Multi-variant experiments of the same model were not
 possible.
 
 **v1.2 schema:** `agentes_a_competir` is an array of agent names
-(e.g. `"propuesta-minimax-T15P10-01"`, `"propuesta-glm"`).
+(e.g. `"propuesta-minimax-T10-01"`, `"propuesta-glm"`).
 The orchestrator:
 
 1. For each entry, looks up `~/.config/opencode/agents/{agente}.md`.
@@ -499,11 +524,12 @@ could exceed the Max-tier ceiling. The fix:
 
 ### Parameter validation report (`param_validation_report`)
 
-For agents whose name matches `propuesta-minimax-T*`, `propuesta-minimax-P*`,
-`propuesta-minimax-K*`, or any `T*P*` combination thereof (the v1.7 sweep
-matrix: `propuesta-minimax-T{P}P{P}-{01..03}.md`, 45 agents), the step 1
-prompt template instructs the agent to append a `## Generation parameters`
-section to its output proposal, reporting:
+For agents whose name matches `propuesta-minimax-T*` (the v1.8
+temperature sweep: `propuesta-minimax-T{T}-{01..NN}.md`, 36 agents
+with 6 T values × variable clone counts: T00×3, T02×3, T04×6,
+T06×6, T08×6, T10×12), the step 1 prompt template instructs the
+agent to append a `## Generation parameters` section to its output
+proposal, reporting:
 
 - Declared values (from the agent's frontmatter)
 - Observed values (from the opencode SDK's response metadata, if
@@ -518,26 +544,30 @@ report`).
 
 1. **Per-proposal report** — the agent itself logs declared vs
    observed parameters in its output.
-2. **Replica-cohort cross-check** — the 3 replicas (`-01`/`-02`/`-03`)
-   of each (T,P) cell share identical declared parameters. Their
-   outputs should cluster tightly on identical prompts, while
-   `propuesta-minimax-T20P10-01` (extreme temperature) diverges from
-   the cluster. If the 3 replicas diverge as much as the T20 cell
-   diverges from the T00 cell, MiniMax is ignoring the parameter.
+2. **Replica-cohort cross-check** — the N clones (`-01..-NN`) of
+   each T value share identical declared parameters. Their outputs
+   should cluster tightly on identical prompts, while the
+   `propuesta-minimax-T10-*` cohort (12 clones at the spec's upper
+   temperature edge, the variance-prone end of the sweep) diverges
+   from the cluster. If the clones within a cohort diverge as much
+   as the T10 cohort diverges from the T00 cohort, MiniMax is
+   ignoring the parameter.
    The intrinsic-variance baseline (formerly `propuesta-minimax-baseline-{01..15}`
-   at T=0.7) now lives at every (T,P) cell — every cell has its own
-   3-replica control cohort.
+   at T=0.7) now lives at every T value — every cell has its own
+   clone cohort, and the cohort size scales with the variance-prone
+   end (T=1.0 gets 12 clones vs T=0.0's 3).
 3. **Sintetizador table** — `04-clasificacion.md` aggregates the
    per-proposal reports and ranks proposals by their parameter
    profile.
 
 ### Known parameter limitations (per Anthropic spec)
 
-- `temperature` range: 0.0 to 1.0 per Anthropic; `T15P*-*` (1.5) and
-  `T20P*-*` (2.0) are out-of-spec. MiniMax behavior on out-of-spec
-  values is unknown — the experiment will reveal whether MiniMax
-  clamps, errors, or accepts.
-- `top_p` range: 0.0 to 1.0; valid for all our values.
+- `temperature` range: 0.0 to 1.0 per Anthropic. All v1.8 T values
+  ({0.0, 0.2, 0.4, 0.6, 0.8, 1.0}) are in-spec. The v1.7 out-of-spec
+  cells (T=1.5, T=2.0) were removed in v1.8 because the
+  clamp-discovery insight they yielded was no longer needed.
+- `top_p` is fixed out of the v1.8 prompt (was a v1.7 sweep axis).
+  All v1.8 Group C agents share the default `top_p` (gateway default).
 - `top_k` range: positive integer; Anthropic-specific. MiniMax
   behavior unknown.
 
@@ -646,36 +676,35 @@ For the v6 prompt with `id = fib-rust-cli`, the v1.6 layout would be:
 fib-rust-cli/
 ├── orquestador/
 │   ├── work/
-│   │   ├── 02-validacion-propuesta-minimax-T15P10-01/   ← validador's step-2 scratch
-│   │   ├── 02-validacion-propuesta-minimax-T15P10-02/
-│   │   ├── 02-validacion-propuesta-minimax-T15P10-03/
-│   │   ├── 02-validacion-propuesta-minimax-T20P10-01/
-│   │   ├── 02-validacion-propuesta-minimax-T20P10-02/
-│   │   ├── 02-validacion-propuesta-minimax-T20P10-03/
-│   │   ├── 05-propuesta-integrada/                        ← sintetizador's step-5 scratch
-│   │   ├── 06-validacion-integrada/                       ← validador's step-6 scratch
-│   │   └── 03-04-07-08-10/                                ← usually empty
+│   │   ├── 02-validacion-propuesta-minimax-T10-01/   ← validador's step-2 scratch
+│   │   ├── 02-validacion-propuesta-minimax-T10-02/
+│   │   ├── 02-validacion-propuesta-minimax-T10-12/   ← last T10 clone
+│   │   ├── 02-validacion-propuesta-minimax-T06-01/
+│   │   ├── 02-validacion-propuesta-minimax-T06-06/
+│   │   ├── 05-propuesta-integrada/                   ← sintetizador's step-5 scratch
+│   │   ├── 06-validacion-integrada/                  ← validador's step-6 scratch
+│   │   └── 03-04-07-08-10/                           ← usually empty
 │   ├── log/
 │   │   ├── 02-validacion-*.log
 │   │   ├── 05-propuesta-integrada.log
 │   │   ├── 06-validacion-integrada.log
-│   │   └── 03-04-07-08-10.log                              ← usually empty
+│   │   └── 03-04-07-08-10.log                         ← usually empty
 │   └── proposal/
 │       ├── 03-calificacion-evaluador.md
 │       ├── 04-clasificacion.md
-│       ├── 05-propuesta-integrada.md                       (sintesis_central)
+│       ├── 05-propuesta-integrada.md                  (sintesis_central)
 │       ├── 06-validacion-integrada.md
 │       ├── 07-calificacion-final.md
 │       ├── 08-ganador.md
 │       ├── 09-sumario.md
-│       └── 10-sintesis-cross-iter.md                       (sintesis_final)
-├── propuesta-minimax-T15P10-01/
-│   ├── work/01-propuesta-minimax-T15P10-01/
-│   ├── log/01-propuesta-minimax-T15P10-01.log
+│       └── 10-sintesis-cross-iter.md                  (sintesis_final)
+├── propuesta-minimax-T10-01/
+│   ├── work/01-propuesta-minimax-T10-01/
+│   ├── log/01-propuesta-minimax-T10-01.log
 │   └── proposal/
-│       ├── 01-propuesta-minimax-T15P10-01.md
-│       └── 02-validacion-propuesta-minimax-T15P10-01.md
-├── propuesta-minimax-T15P10-02/
+│       ├── 01-propuesta-minimax-T10-01.md
+│       └── 02-validacion-propuesta-minimax-T10-01.md
+├── propuesta-minimax-T10-02/
 │   └── ...
 └── ... (one folder per agent in agentes_a_competir)
 ```
