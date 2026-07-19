@@ -2,6 +2,71 @@
 
 All notable changes to `opencode-moa` are documented here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.1] - 2026-07-18
+
+### Documented
+
+- **SDK temperature clamp empirical confirmation.** The
+  `@ai-sdk/anthropic@3.0.82` SDK bundled in opencode 1.18.3 silently
+  clamps `temperature > 1.0` to `1.0` before the HTTP request is sent
+  to the MiniMax Anthropic-compatible endpoint. For MiniMax-M3 (which
+  is not a known Claude model so `rejectsSamplingParameters=false`),
+  the "reject temperature" path is skipped but the `temperature > 1`
+  clamp still executes. The 30 cells `propuesta-minimax-T15P*` and
+  `propuesta-minimax-T20P*` of the v1.7 sweep matrix all reach MiniMax
+  as `temperature=1.0`.
+
+  Method: HTTP proxy listening on `127.0.0.1:8888` capturing the raw
+  request body sent by `opencode run --agent test-T*`. Six agents at
+  `temperature = {0.0, 0.1, 0.5, 1.0, 1.5, 2.0}` were tested. Results:
+
+  | Agent | Frontmatter | Sent to MiniMax |
+  |---|---|---|
+  | `test-T00` | `temperature: 0.0` | `0` |
+  | `test-T01` | `temperature: 0.1` | `0.1` ✓ |
+  | `test-T05` | `temperature: 0.5` | `0.5` ✓ |
+  | `test-T10` | `temperature: 1.0` | `1` ✓ |
+  | `test-T15` | `temperature: 1.5` | **`1`** ⚠️ clamped |
+  | `test-T20` | `temperature: 2.0` | **`1`** ⚠️ clamped |
+
+  Reproduction recipe and agent files preserved in
+  `/tmp/opencode-t10-vs-t15-t20/` (ephemeral; not in repo). Full write-up
+  in `docs/papers/DRAFT-multi-model-orchestration.md` §5.11.
+
+### Changed
+
+- `README.md`: new "Known limitations → SDK temperature clamp"
+  sub-section with the table above and the recommended workaround
+  (use raw HTTP, not Anthropic SDK, for T>1.0 testing against MiniMax).
+- `docs/papers/DRAFT-multi-model-orchestration.md`: new §5.11
+  documenting the proxy method, results, and implications for the v1.7
+  sweep-matrix design.
+
+### Notes
+
+- **No code or roster changes.** The v1.7 sweep matrix stays as
+  designed (the clamp is upstream SDK behaviour, not an
+  `opencode-moa` bug). The T15/T20 cells continue to receive
+  `temperature=1.0` and the 3 replicas per cell still provide
+  intrinsic-variance control at T=1.0.
+- **Historical bitácoras are not edited.** Run E §5.9 and Run F §5.10
+  retain their T15/T10 win/loss records as historical evidence; only
+  the *interpretation* in the new §5.11 notes that the differences
+  reflect sampling variance rather than temperature effects.
+- **Workaround for future runs:** to test T>1.0 against MiniMax in a
+  controlled experiment, bypass the opencode SDK and call the
+  endpoint directly with `curl`/`httpx`/`requests`. The MiniMax docs
+  (`https://platform.minimax.io/docs/api-reference/text-ai-sdk.md`)
+  state `default top_p = 0.95` for M3 but the temperature spec is
+  inherited from the Anthropic SDK defaults (`[0, 1]`).
+- **Pending empirical questions** (to be addressed in upcoming
+  empirical sessions, see paper §6 future work):
+  - Does MiniMax honour `top_p` and `top_k` parameters as sent?
+  - Does MiniMax apply a server-side clamp on `temperature` above 1.0
+    if reached (vs. silently passing it through)? The current
+    evidence shows the SDK clamps, so MiniMax never sees T>1.0
+    via opencode; raw curl tests are needed.
+
 ## [1.7] - 2026-07-18
 
 ### Removed

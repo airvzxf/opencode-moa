@@ -1399,6 +1399,195 @@ prompts + parameter-sweep agents). Mitigation: wipe workdir + retry.
 All 5 succeeded on retry. This is a different bug class than the
 validador webfetch issue.
 
+### 5.11 Empirical confirmation: SDK temperature clamp (2026-07-18)
+
+§5.7 documented the project's epistemic-honesty approach to the
+parameter validation table: when a cell declares `temperature=1.5`
+(out of Anthropic spec), the proposal records it as `unknown /
+probably clamped to 1.0` because the project could not intercept the
+HTTP request. The `v1.2.2 priority fix` noted in §5.7 — *"instrument
+the opencode SDK (or upstream gateway) to return resolved sampling
+parameters in the response envelope"* — was deferred.
+
+This section reports the empirical resolution of that priority fix:
+a minimal HTTP proxy that intercepts opencode's outgoing requests to
+the MiniMax Anthropic-compatible endpoint. The proxy is the only
+instrumentation layer between opencode and MiniMax, so every HTTP
+body that the SDK sends is captured verbatim.
+
+#### 5.11.1 Method
+
+A local proxy listening on `127.0.0.1:8888`, written in 40 lines of
+Python stdlib (`http.server.BaseHTTPRequestHandler`), was placed in
+front of the MiniMax endpoint by overriding the provider's `baseURL`
+in a project-level `.opencode/opencode.json`:
+
+```json
+{
+  "provider": {
+    "minimax-coding-plan": {
+      "npm": "@ai-sdk/anthropic",
+      "options": {
+        "baseURL": "http://127.0.0.1:8888/v1",
+        "apiKey": "sk-cp-stub-proxy-receives-real-key-via-env"
+      },
+      "models": {
+        "MiniMax-M3": {
+          "name": "MiniMax M3 (proxy test)",
+          "options": { "thinking": { "type": "disabled" } }
+        }
+      }
+    }
+  }
+}
+```
+
+The proxy logs the full request body (including `model`,
+`temperature`, `top_p`, `top_k`, `messages`, `system`) to
+`/tmp/opencode-t10-vs-t15-t20/proxy.log` and returns a stub 200
+response (the test only requires reading the body; the response is
+discarded). The proxy was placed in a fresh temp dir
+(`/tmp/opencode-t10-vs-t15-t20/`) with six agent files
+(`.opencode/agents/test-T{00,01,05,10,15,20}.md`), each declaring a
+different `temperature` in frontmatter and `mode: primary` (so
+`opencode run --agent test-T*` loads them as the primary session
+agent).
+
+The MiniMax Anthropic-compatible endpoint is at
+`https://api.minimax.io/anthropic/v1/messages` (per opencode config;
+see `~/.config/opencode/opencode.json`). The proxy intercepts POST
+requests on `http://127.0.0.1:8888/v1/messages`. No outbound traffic
+to MiniMax occurs during this test.
+
+Two side discoveries during method development:
+- **Mode gate**: opencode's `--agent` flag rejects subagent-mode
+  agents (`mode: subagent`) with `"agent X is a subagent, not a
+  primary agent. Falling back to default agent"` — the fallback
+  loses all agent-specific temperature. All test agents were set to
+  `mode: primary` to enable per-agent temperature loading.
+- **Adaptive thinking forced**: the bundled SDK contains a
+  hard-coded branch (`minimax-m3") && $.model.api.npm ===
+  "@ai-sdk/anthropic"` → `Z.thinking = {type:"adaptive"}`) that
+  forces adaptive thinking for `minimax-m3` models. Adaptive
+  thinking strips `temperature` from the request before the
+  Anthropic-spec clamp can run. To isolate the temperature question,
+  the model config sets `options.thinking = {type:"disabled"}` so the
+  temperature field survives into the HTTP request body.
+
+#### 5.11.2 Results
+
+Six agents, each invoked once with the minimal prompt `"OK"`, produced
+six POST bodies. Parsed `temperature` field:
+
+| Agent | Frontmatter `temperature` | **HTTP body `temperature`** | Status |
+|---|---|---|---|
+| `test-T00` | `0.0` | `0` | ✓ in-range, passes through |
+| `test-T01` | `0.1` | `0.1` | ✓ in-range, passes through |
+| `test-T05` | `0.5` | `0.5` | ✓ in-range, passes through |
+| `test-T10` | `1.0` | `1` | ✓ in-range, passes through |
+| **`test-T15`** | **`1.5`** | **`1`** | ⚠️ **clamped to 1.0** |
+| **`test-T20`** | **`2.0`** | **`1`** | ⚠️ **clamped to 1.0** |
+
+The clamp source is verified in the bundled SDK source
+(`@ai-sdk/anthropic@3.0.82`, extracted via `strings` from
+`/usr/bin/opencode`):
+
+```js
+if (q != null && q > 1)
+  j.push({ type: "unsupported", feature: "temperature",
+           details: `${q} exceeds anthropic maximum of 1.0. clamped to 1.0` }),
+  q = 1;
+else if (q != null && q < 0)
+  j.push({ type: "unsupported", feature: "temperature",
+           details: `${q} is below anthropic minimum of 0. clamped to 0` }),
+  q = 0;
+```
+
+For MiniMax-M3, `rejectsSamplingParameters` is `false` (the SDK only
+returns `true` for known Claude model ids), so the "reject
+temperature" path is skipped — but the `q > 1` clamp above runs
+unconditionally for every model.
+
+#### 5.11.3 Implications for v1.7 sweep-matrix design
+
+The v1.7 sweep matrix
+(`docs/proposals/001-orquestador-nativo-opencode.md` §4, CHANGELOG
+v1.7) includes 5 temperature values × 3 top_p × 3 replicas = 45 cells,
+of which the T15 and T20 cells (30 of 45, two-thirds) declare
+`temperature` outside the Anthropic spec range. Per §5.11.2, every one
+of these 30 cells reaches MiniMax as `temperature=1.0`. The T15 and
+T20 cells are therefore **not** testing the declared `temperature`
+value — they are testing `temperature=1.0` with the declared
+`top_p` and the per-cell replica.
+
+Concretely, the 30 cells form two equivalence classes under the
+clamp:
+- `propuesta-minimax-T15P00-{01,02,03}` ≡ `propuesta-minimax-T10P00-{01,02,03}` (6 agents, all T=1.0, P=0.0)
+- `propuesta-minimax-T15P05-{01,02,03}` ≡ `propuesta-minimax-T10P05-{01,02,03}` (6 agents, all T=1.0, P=0.5)
+- `propuesta-minimax-T15P10-{01,02,03}` ≡ `propuesta-minimax-T10P10-{01,02,03}` (6 agents, all T=1.0, P=1.0)
+- `propuesta-minimax-T20P00-{01,02,03}` ≡ same T10P00 cluster (already counted)
+- `propuesta-minimax-T20P05-{01,02,03}` ≡ same T10P05 cluster
+- `propuesta-minimax-T20P10-{01,02,03}` ≡ same T10P10 cluster
+
+So 30 of the 45 T×P cells collapse to 9 effective distinct conditions
+at T=1.0, each with 6 replicas (3 from T10 + 3 from T15 or T20). The
+matrix still serves as a useful intrinsic-variance probe for T=1.0,
+but **does not** answer the question the v1.7 design posed about
+"out-of-spec" sampling.
+
+#### 5.11.4 Implications for historical results (Run E, Run F)
+
+Run E §5.9 and Run F §5.10 both feature `propuesta-minimax-T15` as a
+top finisher (Run E: AP 8.99 winner; Run F: AP 9.2 runner-up to the
+integrator). §5.7 already noted the epistemic caveat that T15 was
+"probably clamped to 1.0" but the project could not verify. With the
+empirical confirmation, those T15 wins are now reinterpreted as:
+
+- **Content**: produced at `temperature=1.0`, not `1.5`.
+- **Why it won despite being "the same as T10"**: at T=1.0, the
+  sampler has more freedom than at the baseline default (T=0.7),
+  producing longer, more elaborate outputs that score higher on the
+  evaluator's `Completeness` and `Technical Quality` axes. The Run D
+  §5.8.3 intrinsic-variance study (6 identical-input proposals at
+  T=0.7) showed variance of ~6 points on 50; that variance is
+  similar at T=1.0, so a single T15 (T=1.0) run getting a lucky
+  high-completeness sample is consistent with the distribution.
+- **Why a `propuesta-minimax-T10` agent did not also win** in the
+  same runs: T15 was the only T=1.0 cell in v1.3 (the version used
+  for Runs E and F). There was no `propuesta-minimax-T10` agent in
+  v1.3 to act as a control; the v1.7 matrix was designed precisely
+  to fill that gap.
+
+A direct re-test (T10 vs T15 declared, both received as T=1.0, same
+prompt, same prompt seed) is needed to confirm the variance hypothesis.
+Pending.
+
+#### 5.11.5 Implications for future parameter work
+
+Three open questions remain that the proxy method could answer but
+the v1.7 sweep matrix design cannot:
+
+1. **Does MiniMax apply its own server-side clamp on `temperature >
+   1.0`?** If yes, raw curl tests with `temperature=1.5` would also
+   arrive as `1.0`, and MiniMax's temperature range is effectively
+   `[0, 1]`. If no, MiniMax would honor T=1.5 and produce outputs
+   different from T=1.0 in ways the v1.7 sweep cannot measure.
+   Method: `curl` directly to
+   `https://api.minimax.io/anthropic/v1/messages` with
+   `temperature=1.5` in the body, bypassing the SDK entirely.
+2. **Does MiniMax honour `top_p` and `top_k` as sent?** The v1.7
+   matrix tests 3 top_p values × 45 cells, but the SDK does not
+   strip top_p (only temperature under adaptive thinking). Whether
+   MiniMax applies top_p to its sampler is an open empirical
+   question — see H1 in the upcoming Stage 1 probe.
+3. **Does `temperature=0` behave as argmax in MiniMax?** The §5.8.3
+   intrinsic-variance study suggested floating-point non-determinism
+   affects even low-T outputs, but a focused study (e.g. 50 runs at
+   T=0 with a token-position-controlled prompt) is needed.
+
+These questions are scoped for the upcoming empirical session
+(see §7 Future work).
+
 ## 6. Discussion
 
 ### 6.1 Proposition (preliminary, N=1): **model floor > model lift**

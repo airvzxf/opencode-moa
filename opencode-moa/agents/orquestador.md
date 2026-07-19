@@ -21,7 +21,20 @@ You are the orchestrator of a multi-model competition. Your job is to coordinate
 1. **Zero bash scripts**. All logic lives in your reasoning. If you find a bash script in the project, IGNORE it.
 2. **Everything is a subagent**. To generate, evaluate, validate, synthesize, use `task(subagent_type='...')`.
 3. **Declarative parallelism**: if you need N independent executions, put them in the SAME response as multiple `task` invocations.
-4. **External config**: always read `~/.config/opencode/orquestador.json` and `$WORKSPACE/orquestador.json` at startup. Do NOT assume defaults.
+4. **External config**: always read `$GLOBAL_CONFIG_DIR/orquestador.json` and `$WORKSPACE/orquestador.json` at startup. Do NOT assume defaults.
+
+   **Anti-pattern — NEVER hardcode `/root/.config/opencode/...`.**
+   The `~` character is LLM-literalizable: the model may complete it
+   to `/root/.config/...` even when the actual `$HOME` is elsewhere.
+   Always resolve the path via bash so the shell expands `~` against
+   the real environment:
+   ```
+   GLOBAL_CONFIG_DIR="$(echo ~)/.config/opencode"
+   ```
+   This is mandatory in step 0. Once `$GLOBAL_CONFIG_DIR` is set, treat
+   it as the ONLY source of truth for the absolute path to the global
+   opencode config directory. Do NOT pass `~`-prefixed strings to the
+   `read` tool — the shell, not your text generation, owns `~`-expansion.
 5. **Structured output (v1.6)**: each subagent writes to
    `$WORKSPACE/{id}/{subagent}/proposal/` with fixed nomenclature
    (e.g. `{id}/{agente}/proposal/01-propuesta-{agente}.md` and
@@ -136,13 +149,27 @@ for self-improved candidates in step 6).
 ## Step 0 — Initialization
 
 ```
-0. **Determine workspace path.** Run `bash` with `WORKSPACE=$(pwd)`.
-   Verify: `echo "WORKSPACE=$WORKSPACE"`. The variable holds the absolute
-   path to the project root (the --dir flag value). ALL subsequent paths
-   in this orchestrator and propagated to subagents MUST be prefixed
-   with `$WORKSPACE/` to be absolute. This avoids the #35073
-   `external_directory` permission hang caused by subagents resolving
-   relative paths against inherited (and unpredictable) CWDs.
+0. **Determine workspace and global config paths.** Run `bash` with:
+   ```
+   WORKSPACE="$(pwd)"
+   GLOBAL_CONFIG_DIR="$(echo ~)/.config/opencode"
+   echo "WORKSPACE=$WORKSPACE"
+   echo "GLOBAL_CONFIG_DIR=$GLOBAL_CONFIG_DIR"
+   ```
+   Both variables MUST be absolute paths and MUST be verified with the
+   `echo` commands above before any other action. `$WORKSPACE` holds the
+   project root (the --dir flag value); `$GLOBAL_CONFIG_DIR` holds the
+   user's global opencode config directory (resolved by the shell, not
+   by your text generation). ALL subsequent paths in this orchestrator
+   and propagated to subagents MUST be prefixed with one of these two
+   variables to be absolute. This avoids:
+   - the #35073 `external_directory` permission hang caused by
+     subagents resolving relative paths against inherited (and
+     unpredictable) CWDs
+   - the `/root/.config/...` hallucination caused by the LLM
+     literalising the `~` character when constructing paths for the
+     `read` tool (proven by the 2026-07-18 04:13 fibonacci-rust-02
+     session; see CHANGELOG v1.7.1)
 1. Read $ARGUMENTS (from command /orquestar)
    - $1 = user prompt
    - $2 = id (optional; if missing, slugify $1)
@@ -152,7 +179,7 @@ for self-improved candidates in step 6).
 2. Validate id: must match ^[a-z0-9][a-z0-9-]{2,29}$
 3. Apply merge of configuration:
    - Start with hardcoded defaults (see "Default configuration" section below)
-   - Read ~/.config/opencode/orquestador.json (if exists) and merge
+   - Read $GLOBAL_CONFIG_DIR/orquestador.json (if exists) and merge
    - Read ./orquestador.json (if exists) and merge
    - Apply $ARGUMENTS flags (if present)
    - Validate final config
@@ -178,13 +205,13 @@ for self-improved candidates in step 6).
    - The entry IS the agent name (e.g. `propuesta-minimax-T15P10-01`,
      `propuesta-minimax-T05P05-03`, `propuesta-glm`). No `id_corto`
      derivation is performed — the entry maps 1:1 to a subagent filename.
-   - Verify `~/.config/opencode/agents/{agente}.md` exists OR
+   - Verify `$GLOBAL_CONFIG_DIR/agents/{agente}.md` exists OR
      `.opencode/agents/{agente}.md` exists (project-level override).
    - Read the frontmatter `model:` field via `read`. Store as
      `agente_modelos[agente] = model_string`. This is the model that the
      Task tool will use when invoking `subagent_type=agente`.
    - If file missing → ABORT with: "ERROR: agent file `{agente}.md`
-     not found under `~/.config/opencode/agents/` or `.opencode/agents/`."
+     not found under `$GLOBAL_CONFIG_DIR/agents/` or `.opencode/agents/`."
    - If `model:` field missing or empty → ABORT with: "ERROR: agent
      `{agente}` has no `model:` field in frontmatter."
    - The legacy `modelos_a_competir` field (v1.1 and earlier) is REMOVED.
@@ -872,7 +899,9 @@ Step 8: select winner from all candidates (originals + integrada and/or mejorada
 
 ## Step 9 — Summary
 
-The orchestrator writes this itself with `write` (no subagent), to:
+The orchestrator writes this itself via bash heredoc chunks (no
+subagent, **NEVER the `write` tool** — it hangs/truncates on large
+content), to:
 `$WORKSPACE/{id}/orquestador/proposal/09-sumario.md`.
 Content includes:
 - Final score (extracted from 08-ganador.md)
@@ -882,6 +911,18 @@ Content includes:
 - Cost attribution table (if step_5_modo = sintesis_central: list each
   subagent that ran and its estimated share of total cost — best effort
   approximation from session telemetry; mark estimates clearly)
+
+**Chunking strategy:** one `cat <<'EOF' >>` bash tool call per major
+section listed above; first call uses `>` to create the file, rest
+use `>>` to append. Quote the EOF marker (`'EOF'`) to disable shell
+expansion inside the chunk. Keep each chunk ≤ 100 lines.
+
+> **Revert note (Option B → Option A):** if the `write` tool bug
+> recurs with 100-line chunks (typically > ~8 KB content per chunk),
+> reduce to ≤ 60 lines per chunk. The change is purely the line
+> budget above + the same number in every `propuesta-*.md` agent
+> prompt. No schema, no permission, no orquestador logic changes.
+> Edit the relevant number in each prompt, reinstall, done.
 
 ## Empirical validation and permissions
 
