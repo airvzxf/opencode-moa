@@ -64,7 +64,7 @@ There are two kinds of subagent folders:
    step-prefix, not by the agent that produced the file.
 
 2. **{agente}/`** (one per `agentes_a_competir` entry, literal name
-   without `.md` — e.g. `propuesta-glm`, `propuesta-minimax-baseline-01`,
+   without `.md` — e.g. `propuesta-glm`, `propuesta-minimax-T10-01`,
    `propuesta-kimi`). Owns the propuesta's own outputs (01, 02 if
    validation enabled, 05 if `self_improve`, 06 if `self_improve` +
    validation).
@@ -202,8 +202,8 @@ for self-improved candidates in step 6).
 
 4. **Schema v1.2: agent-first roster resolution.** For each entry in
    `agentes_a_competir`:
-   - The entry IS the agent name (e.g. `propuesta-minimax-T15P10-01`,
-     `propuesta-minimax-T05P05-03`, `propuesta-glm`). No `id_corto`
+   - The entry IS the agent name (e.g. `propuesta-minimax-T10-01`,
+     `propuesta-minimax-T02-03`, `propuesta-glm`). No `id_corto`
      derivation is performed — the entry maps 1:1 to a subagent filename.
    - Verify `$GLOBAL_CONFIG_DIR/agents/{agente}.md` exists OR
      `.opencode/agents/{agente}.md` exists (project-level override).
@@ -308,51 +308,42 @@ When merging, the hardcoded v1.7 defaults before any JSON override are:
     "propuesta-minimax-ci-github",
     "propuesta-minimax-cd-releases",
 
-    "propuesta-minimax-T00P00-01",
-    "propuesta-minimax-T00P00-02",
-    "propuesta-minimax-T00P00-03",
-    "propuesta-minimax-T05P00-01",
-    "propuesta-minimax-T05P00-02",
-    "propuesta-minimax-T05P00-03",
-    "propuesta-minimax-T10P00-01",
-    "propuesta-minimax-T10P00-02",
-    "propuesta-minimax-T10P00-03",
-    "propuesta-minimax-T15P00-01",
-    "propuesta-minimax-T15P00-02",
-    "propuesta-minimax-T15P00-03",
-    "propuesta-minimax-T20P00-01",
-    "propuesta-minimax-T20P00-02",
-    "propuesta-minimax-T20P00-03",
-    "propuesta-minimax-T00P05-01",
-    "propuesta-minimax-T00P05-02",
-    "propuesta-minimax-T00P05-03",
-    "propuesta-minimax-T05P05-01",
-    "propuesta-minimax-T05P05-02",
-    "propuesta-minimax-T05P05-03",
-    "propuesta-minimax-T10P05-01",
-    "propuesta-minimax-T10P05-02",
-    "propuesta-minimax-T10P05-03",
-    "propuesta-minimax-T15P05-01",
-    "propuesta-minimax-T15P05-02",
-    "propuesta-minimax-T15P05-03",
-    "propuesta-minimax-T20P05-01",
-    "propuesta-minimax-T20P05-02",
-    "propuesta-minimax-T20P05-03",
-    "propuesta-minimax-T00P10-01",
-    "propuesta-minimax-T00P10-02",
-    "propuesta-minimax-T00P10-03",
-    "propuesta-minimax-T05P10-01",
-    "propuesta-minimax-T05P10-02",
-    "propuesta-minimax-T05P10-03",
-    "propuesta-minimax-T10P10-01",
-    "propuesta-minimax-T10P10-02",
-    "propuesta-minimax-T10P10-03",
-    "propuesta-minimax-T15P10-01",
-    "propuesta-minimax-T15P10-02",
-    "propuesta-minimax-T15P10-03",
-    "propuesta-minimax-T20P10-01",
-    "propuesta-minimax-T20P10-02",
-    "propuesta-minimax-T20P10-03"
+    "propuesta-minimax-T00-01",
+    "propuesta-minimax-T00-02",
+    "propuesta-minimax-T00-03",
+    "propuesta-minimax-T02-01",
+    "propuesta-minimax-T02-02",
+    "propuesta-minimax-T02-03",
+    "propuesta-minimax-T04-01",
+    "propuesta-minimax-T04-02",
+    "propuesta-minimax-T04-03",
+    "propuesta-minimax-T04-04",
+    "propuesta-minimax-T04-05",
+    "propuesta-minimax-T04-06",
+    "propuesta-minimax-T06-01",
+    "propuesta-minimax-T06-02",
+    "propuesta-minimax-T06-03",
+    "propuesta-minimax-T06-04",
+    "propuesta-minimax-T06-05",
+    "propuesta-minimax-T06-06",
+    "propuesta-minimax-T08-01",
+    "propuesta-minimax-T08-02",
+    "propuesta-minimax-T08-03",
+    "propuesta-minimax-T08-04",
+    "propuesta-minimax-T08-05",
+    "propuesta-minimax-T08-06",
+    "propuesta-minimax-T10-01",
+    "propuesta-minimax-T10-02",
+    "propuesta-minimax-T10-03",
+    "propuesta-minimax-T10-04",
+    "propuesta-minimax-T10-05",
+    "propuesta-minimax-T10-06",
+    "propuesta-minimax-T10-07",
+    "propuesta-minimax-T10-08",
+    "propuesta-minimax-T10-09",
+    "propuesta-minimax-T10-10",
+    "propuesta-minimax-T10-11",
+    "propuesta-minimax-T10-12"
   ],
   "modelo_objetivo": "minimax-coding-plan/MiniMax-M3",
   "validacion_empirica": false,
@@ -494,9 +485,10 @@ task(
       Follow your system prompt instructions.
 
       === PARAMETER REPORTING (REQUIRED for parameter-sweep agents) ===
-      If your agent name matches propuesta-minimax-T*, -P*, -K*, or
-      any T*P* combination thereof (e.g. -T15P10-01), append at the end
-      of your proposal file:
+      If your agent name matches `propuesta-minimax-T*` (the v1.8
+      temperature sweep: `propuesta-minimax-T{T}-{01..NN}.md`, 36 agents
+      with 6 T values × variable clone counts: T00×3, T02×3, T04×6,
+      T06×6, T08×6, T10×12), append at the end of your proposal file:
 
       ## Generation parameters
 
@@ -754,12 +746,13 @@ task(
     `01-{agent}.md` file for a `## Generation parameters`
     section. Build a table showing:
 
-    | Agent | Declared T/P | Observed T/P | Status | Total score |
-    |-------|--------------|--------------|--------|-------------|
-    | propuesta-minimax-T00P00-01 | 0.0 / 0.0 | 0.0 / 0.0 (assumed) | ✅ | XX/50 |
-    | propuesta-minimax-T05P05-03 | 0.5 / 0.5 | 0.5 / 0.5 (assumed) | ✅ | XX/50 |
-    | propuesta-minimax-T15P10-02 | 1.5 / 1.0 | 1.5 (assumed) or 1.0 (clamped) / 1.0 | ⚠️ | XX/50 |
-    | propuesta-minimax-T20P10-01 | 2.0 / 1.0 | - / - | ❓ out-of-spec | XX/50 |
+    | Agent | Declared T | Observed T | Status | Total score |
+    |-------|-------------|-------------|--------|-------------|
+    | propuesta-minimax-T00-01 | 0.0 | 0.0 (assumed) | ✅ | XX/50 |
+    | propuesta-minimax-T02-03 | 0.2 | 0.2 (assumed) | ✅ | XX/50 |
+    | propuesta-minimax-T04-06 | 0.4 | 0.4 (assumed) | ✅ | XX/50 |
+    | propuesta-minimax-T10-02 | 1.0 | 1.0 (assumed) | ✅ | XX/50 |
+    | propuesta-minimax-T10-12 | 1.0 | 1.0 (assumed) | ✅ | XX/50 |
     | ... |
 
     If the proposal lacks the `## Generation parameters` section, mark

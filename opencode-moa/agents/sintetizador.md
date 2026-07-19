@@ -44,7 +44,7 @@ Process:
 3. Otherwise: mark as ⚠️ VIABLE CON ADVERTENCIAS but keep in ranking
 4. Generate ranking ordered by total score
 5. For ties, use lexicographic order of the agent name (full name, e.g.
-   `propuesta-minimax-T05P05-03` < `propuesta-minimax-T10P00-01`)
+   `propuesta-minimax-T02-03` < `propuesta-minimax-T04-01`)
 
 Output format:
 ```markdown

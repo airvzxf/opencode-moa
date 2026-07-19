@@ -139,11 +139,14 @@ opencode-moa/
 
 ### Multi-model competition (step 1)
 
-The v1.5 bundle inherits the 42-agent default roster from v1.3/v1.4: 6 OpenCode Go agents
-and 36 MiniMax Token Plan agents (no agent added or removed). A project-level `orquestador.json` may
-select a smaller cohort or add custom variants. Proposals are launched in
-strict serial order — one agent per orchestrator response — and each selected agent
-writes its own report.
+The v1.8 bundle ships with a **55-agent default roster**: 6 OpenCode Go agents
+and 49 MiniMax Token Plan agents (13 Grupo B prompt-injection variants + 36
+Grupo C T-only sweep). The sweep (v1.7 → v1.8) dropped the redundant `top_p`
+axis and tightened the temperature range to Anthropic spec (0.0–1.0 inclusive),
+adding 12 clones at T=1.0 for intrinsic-variance signal at the high-entropy
+edge. A project-level `orquestador.json` may select a smaller cohort or add
+custom variants. Proposals are launched in strict serial order — one agent
+per orchestrator response — and each selected agent writes its own report.
 
 ### Empirical validation (step 2)
 
@@ -225,7 +228,7 @@ It's also informed by 6+ months of real-world multi-model orchestration experime
 
 ## Known limitations
 
-### SDK temperature clamp (discovered 2026-07-18)
+### SDK temperature clamp (discovered 2026-07-18, fixed in v1.8 by design)
 
 The `@ai-sdk/anthropic@3.0.82` SDK bundled in opencode 1.18.3 silently
 clamps `temperature > 1.0` to `1.0` in its `getArgs()` method before the
@@ -233,23 +236,25 @@ HTTP request. For MiniMax-M3 (where `rejectsSamplingParameters=false`
 because it is not a known Claude model), the "reject temperature" path
 is skipped but the clamp at `temperature > 1` still executes.
 
-This affects the v1.7 sweep matrix:
+This affects the **v1.7 sweep matrix only**; the v1.8 T-only sweep
+avoids the issue entirely by keeping all values inside Anthropic spec:
 
-| Agent cell | Frontmatter `temperature` | **What MiniMax receives** |
+| v1.8 agent cell | Frontmatter `temperature` | **What MiniMax receives** |
 |---|---|---|
-| `propuesta-minimax-T05P*` | 0.5 | 0.5 ✓ |
-| `propuesta-minimax-T10P*` | 1.0 | 1 ✓ |
-| `propuesta-minimax-T15P*` | 1.5 | **1** ⚠️ clamped |
-| `propuesta-minimax-T20P*` | 2.0 | **1** ⚠️ clamped |
+| `propuesta-minimax-T00-*` | 0.0 | 0.0 ✓ (deterministic-control) |
+| `propuesta-minimax-T02-*` | 0.2 | 0.2 ✓ |
+| `propuesta-minimax-T04-*` | 0.4 | 0.4 ✓ |
+| `propuesta-minimax-T06-*` | 0.6 | 0.6 ✓ |
+| `propuesta-minimax-T08-*` | 0.8 | 0.8 ✓ |
+| `propuesta-minimax-T10-*` | 1.0 | 1.0 ✓ |
 
-Empirically verified via HTTP proxy (`/tmp/opencode-t10-vs-t15-t20/`,
-see `CHANGELOG.md` v1.7.1 and paper draft §5.11). The 30 cells of the
-"out-of-Anthropic-spec" portion of the v1.7 matrix all reach MiniMax
-as `temperature=1.0`. The T15/T20 wins in v7/v8 bitácoras were
-sampling variance at T=1.0, not a real effect of the higher
-temperature.
+The v1.7 cells T15/T20 (the "out-of-Anthropic-spec" portion) were
+empirically verified to clamp to 1.0 (see `CHANGELOG.md` v1.7.1 and
+paper draft §5.11). The T15/T20 wins in v7/v8 bitácoras were sampling
+variance at T=1.0, not a real effect of the higher temperature — which
+is why v1.8 dropped those cells rather than reproducing them.
 
-**Workaround if you want to test T>1.0 against MiniMax:** call the
+**Workaround if you need to test T>1.0 against MiniMax:** call the
 endpoint directly with `curl`, `httpx`, `requests`, or any non-Anthropic
 HTTP client. The Anthropic-compatible SDKs (`@ai-sdk/anthropic`,
 `anthropic` Python SDK) all clamp at their respective versions.
