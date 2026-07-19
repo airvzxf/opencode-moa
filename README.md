@@ -223,6 +223,37 @@ This project is inspired by the paper **"Mixture-of-Agents"** (Together AI, 2024
 
 It's also informed by 6+ months of real-world multi-model orchestration experiments documented in the research folder.
 
+## Known limitations
+
+### SDK temperature clamp (discovered 2026-07-18)
+
+The `@ai-sdk/anthropic@3.0.82` SDK bundled in opencode 1.18.3 silently
+clamps `temperature > 1.0` to `1.0` in its `getArgs()` method before the
+HTTP request. For MiniMax-M3 (where `rejectsSamplingParameters=false`
+because it is not a known Claude model), the "reject temperature" path
+is skipped but the clamp at `temperature > 1` still executes.
+
+This affects the v1.7 sweep matrix:
+
+| Agent cell | Frontmatter `temperature` | **What MiniMax receives** |
+|---|---|---|
+| `propuesta-minimax-T05P*` | 0.5 | 0.5 ✓ |
+| `propuesta-minimax-T10P*` | 1.0 | 1 ✓ |
+| `propuesta-minimax-T15P*` | 1.5 | **1** ⚠️ clamped |
+| `propuesta-minimax-T20P*` | 2.0 | **1** ⚠️ clamped |
+
+Empirically verified via HTTP proxy (`/tmp/opencode-t10-vs-t15-t20/`,
+see `CHANGELOG.md` v1.7.1 and paper draft §5.11). The 30 cells of the
+"out-of-Anthropic-spec" portion of the v1.7 matrix all reach MiniMax
+as `temperature=1.0`. The T15/T20 wins in v7/v8 bitácoras were
+sampling variance at T=1.0, not a real effect of the higher
+temperature.
+
+**Workaround if you want to test T>1.0 against MiniMax:** call the
+endpoint directly with `curl`, `httpx`, `requests`, or any non-Anthropic
+HTTP client. The Anthropic-compatible SDKs (`@ai-sdk/anthropic`,
+`anthropic` Python SDK) all clamp at their respective versions.
+
 ## Contributing
 
 This is currently a single-author project (Israel Roldan, [israel.alberto.rv@gmail.com](mailto:israel.alberto.rv@gmail.com)). Contributions welcome via issues and pull requests.

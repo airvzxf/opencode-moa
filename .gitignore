@@ -1,0 +1,22 @@
+# Environment files with secrets (API keys, tokens)
+.env
+.env.*
+!.env.example
+
+# opencode-moa runtime outputs (also see opencode-moa/AGENTS.md §4)
+out/
+work/
+logs/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Local logs not tracked elsewhere
+*.log
+!docs/research/experiments/*.log
+!scripts/check-no-forbidden-model.sh
