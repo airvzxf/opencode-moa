@@ -2,7 +2,7 @@
 description: Generates or improves technical proposals (MiniMax-M3 via minimax-coding-plan; Group B: observability priority injection v1.3 — structured-tracing-and-metrics-first directive prepended)
 mode: subagent
 model: minimax-coding-plan/MiniMax-M3
-temperature: 0.7
+temperature: 1.0
 ---
 
 # ⚠️ ROLE OVERRIDE — overrides everything below this line ⚠️

@@ -2,7 +2,7 @@
 description: Generates or improves technical proposals (GLM-5.1 variant)
 mode: subagent
 model: opencode-go/glm-5.1
-temperature: 0.7
+temperature: 1.0
 ---
 
 ## Work directory

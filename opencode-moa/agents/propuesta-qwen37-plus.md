@@ -2,7 +2,7 @@
 description: Generates or improves technical proposals (Qwen3.7 Plus variant)
 mode: subagent
 model: opencode-go/qwen3.7-plus
-temperature: 0.7
+temperature: 1.0
 ---
 
 ## Work directory

@@ -2,7 +2,7 @@
 description: Generates or improves technical proposals (DeepSeek V4 Flash variant — fast/cost-optimized)
 mode: subagent
 model: opencode-go/deepseek-v4-flash
-temperature: 0.7
+temperature: 1.0
 ---
 
 ## Work directory
